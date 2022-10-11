@@ -14,9 +14,16 @@ be estimated.
 
 **Installation**
 
-Using pip:
+Clone the SwarmFACE package on your computer and 
+go to the newly made SwarmFACE directory
 
-`pip install ./`
+    git clone https://github.com/ablagau/SwarmFACE
+    cd SwarmFACE
+
+After you activate the python environment you 
+can use pip3:
+
+`pip3 install ./`
 
 **Dependencies**
 
@@ -33,12 +40,10 @@ To import the package write:
 
     from SwarmFACE import *
 
-
 There are five high-level functions to estimate the FAC 
 density, one to find Swarm conjunctions above the auroral oval, 
-and two for estimating the FAC quality indices.  
-To run, e.g., the function that estimates the FAC density by the 
-single-satellite write:
+and two for estimating the FAC quality indices. To run, e.g., the function that estimates the FAC density by the 
+single-satellite method, write:
 
     dtime_beg = '2014-05-04T17:48:00'
     dtime_end = '2014-05-04T17:55:00'
