@@ -1,11 +1,16 @@
 **Overview**
 
-The _**SwarmFACE**_ package serves the exploration of field-aligned currents (FACs) system based on the 
-magnetic field measurements supplied by the Swarm satellites. Single- and multi-satellite methods 
-or satellite configurations are implemented to extend the characterization of FAC systems beyond the Swarm official Level-2 FAC product. The package further provides useful utilities
-to automatically estimate the auroral oval (AO) location and extension, or the intervals when
-Swarm forms a close configuration above the AO. In addition, for each AO crossing, a series of
-FAC quality indicators, related to the FAC methods’ underlying assumptions, can be estimated.
+The _**SwarmFACE**_ package serves the exploration of field-aligned currents 
+(FACs) system based on the magnetic field measurements supplied by the Swarm 
+satellites. Improvements of well-established techniques as well as novel 
+single- and multi-satellite methods are implemented to extend 
+the characterization of FAC systems beyond the Swarm official Level-2 FAC 
+product. The package further provides an useful utility to find intervals 
+when Swarm forms a close configuration above the auroral oval (AO). In 
+addition, for each AO crossing, a series of FAC quality indicators related to the FAC methods’ 
+underlying assumptions (i.e. FAC sheet planarity and orientation, correlation 
+of magnetic field perturbations recorded by the lower Swarm satellites), can 
+be estimated.
 
 **Installation**
 
@@ -39,7 +44,7 @@ single-satellite write:
     dtime_end = '2014-05-04T17:55:00'
     sat = ['C'] 
     j_df, dat_df, param = j1sat(dtime_beg, dtime_end, sat)
-`
+
 For each high-level function, there is an associated 
 jupyter notebook that illustrates its application _notebooks_ 
 directory.
