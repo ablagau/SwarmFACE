@@ -34,25 +34,6 @@ def sign_dang(ang2, ang1):
     a = ang2-ang1
     return (a + 180) % 360 - 180
   
-def R_B_dB_in_GEOC(Rsph, Bnec, dBnec):
-    latsc = np.deg2rad(Rsph[:,0])
-    lonsc = np.deg2rad(Rsph[:,1])  
-    radsc = 0.001*Rsph[:,2]
-    # prepares conversion to global cartesian frame
-    clt,slt = np.cos(latsc.flat),np.sin(latsc.flat)
-    cln,sln = np.cos(lonsc.flat),np.sin(lonsc.flat)
-    north = np.stack((-slt*cln,-slt*sln,clt),axis=-1)
-    east = np.stack((-sln,cln,np.zeros(cln.shape)),axis=-1)
-    center = np.stack((-clt*cln,-clt*sln,-slt),axis=-1)
-    # stores cartesian position vectors in position data matrix R
-    R = -radsc[...,None]*center
-    # stores magnetic data in GEOC (same frame as for R)
-    Bgeo = np.matmul(np.stack((north,east,center),axis=-1),
-                        Bnec[...,None]).reshape(Bnec.shape)
-    dBgeo = np.matmul(np.stack((north,east,center),axis=-1),
-                        dBnec[...,None]).reshape(dBnec.shape)
-    return R, Bgeo, dBgeo
-
 def R_in_GEOC(Rsph):
     """Returns Swarm position in cartesian GEO frame and 
     the rotation matrix from NEC to GEO"""
@@ -99,8 +80,11 @@ def get_db_data(sats, tbeg, tend, Bmodel, frame = 'GEOC'):
     dB = pd.DataFrame(dBnec.reshape(-1,nsc*3), columns=coldBnec,index=dti)
     if frame == 'GEOC':
         for sc in range(nsc):
-             R[:,sc,:], Bgeo[:,sc,:], dBgeo[:,sc,:] = \
-                 R_B_dB_in_GEOC(Rsph[:,sc,:], Bnec[:,sc,:], dBnec[:,sc,:])
+            R[:,sc,:], MATnec2geo_sc = R_in_GEOC(np.squeeze(Rsph[:,sc,:]))  
+            Bgeo[:,sc,:] = \
+                np.matmul(MATnec2geo_sc,np.squeeze(Bnec[:,sc,:])[...,None]).reshape(-1,3)
+            dBgeo[:,sc,:] = \
+                np.matmul(MATnec2geo_sc,np.squeeze(dBnec[:,sc,:])[...,None]).reshape(-1,3)
         coldBgeo = pd.MultiIndex.from_product([['dBgeo'],sats,['X','Y','Z']], 
                                names=['Var','Sat','Com'])
         dB = pd.DataFrame(dBgeo.reshape(-1,nsc*3), columns=coldBgeo,index=dti)
