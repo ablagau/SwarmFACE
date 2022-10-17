@@ -36,6 +36,7 @@ release = '0.0.1'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',   
     'sphinx.ext.coverage'
     ]
 source_suffix = [".rst", ".md"]
@@ -54,6 +55,7 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = 'nature'
+#html_theme = 'alabaster'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
