@@ -15,7 +15,26 @@
 # sys.path.insert(0, os.path.abspath('.'))
 import os
 import sys
-sys.path.insert(0, os.path.abspath("../../"))
+root = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+#sys.path.insert(0, os.path.abspath(os.path.join(root,'SwarmFACE','plot_save')))
+sys.path.insert(0, root)
+
+#sys.path.insert(0, os.path.abspath('/home/blagau/FACpy/SwarmFACE/'))
+#print(root)
+#print(os.path.abspath(os.path.join(root,'SwarmFACE')))
+#print(os.path.abspath(os.path.join(root,'SwarmFACE','plot_save')))
+#print(sys.path)
+#import os
+#import sys
+#from setuptools.config import read_configuration
+
+#root = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+
+#conf_dict = read_configuration(os.path.join(root,'setup.cfg'))
+
+#for package in conf_dict['options']['packages']:
+    #sys.path.insert(0, os.path.abspath(os.path.join(root,package)))
+
 
 # -- Project information -----------------------------------------------------
 
