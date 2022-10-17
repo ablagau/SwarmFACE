@@ -16,7 +16,6 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath("../../"))
-#sys.path.insert(1, os.path.abspath("../../SwarmFACE/plot_save"))
 
 # -- Project information -----------------------------------------------------
 
@@ -35,6 +34,8 @@ release = '0.0.1'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.coverage'    
     ]
 source_suffix = [".rst", ".md"]
 
