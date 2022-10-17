@@ -11,6 +11,7 @@ Welcome to SwarmFACE's documentation!
    :caption: Contents:
 
    installation
+   modules
 
 Indices and tables
 ==================
