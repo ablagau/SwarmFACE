@@ -30,7 +30,7 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
     -------
     input_df : list
         list of DataFrames (one per satellite per quarter-orbit
-         section) with input data
+        section) with input data
     RBdBAng_df : list
          list of DataFrrames (one per satellite per quarter-orbit
          section) with intermediate variables
