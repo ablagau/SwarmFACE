@@ -1,46 +1,55 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 25 16:43:04 2022
-
-@author: blagau
-"""
 import numpy as np
 import pandas as pd
-from viresclient import set_token
 from viresclient import SwarmRequest
-from .utils import *
 from .fac import *
+from .utils import *
 from SwarmFACE.plot_save.single_sat import *
 
 def j1sat(dtime_beg, dtime_end, sat, res='LR', use_filter=True, \
             alpha=None, N3d=None, N2d=None, tincl=None, er_db=0.5, \
             angTHR = 30., savedata=True, saveplot=True):
     '''
-    Estimate the FAC density from one Swarm satellite
+    High-level routine to estimate the FAC density with single-satellite method
 
     Parameters
     ----------
     dtime_beg : str
-        Start time
+        start time in ISO format 'YYYY-MM-DDThh:mm:ss'
     dtime_end : str
-        End time
+        end time in ISO format
     sat : [str]
-        satellite
-    res
-    use_filter
-    alpha
-    N3d
-    N2d
-    tincl
-    er_db
-    angTHR
-    savedata
-    saveplot
+        satellite, e.g. ['A']
+    res : str
+        data resolution, 'LR' or 'HR'
+    use_filter : boolean
+        'True' for data filtering
+    alpha : float
+        angle in the tangential plane between the (projection of) current sheet normal and the satellite velocity
+    N3d : [float, float, float]
+        current sheet normal vector in GEO frame
+    N2d : [float, float, float]
+        projection of the current sheet normal on the tangential plane
+    tincl : [ISO time, ISO time]
+         time interval when the information on current sheet inclination is valid
+    er_db : float
+        error in magnetic field measurements
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and the tangential plane
+    savedata : boolean
+        'True' for saving the results in an ASCII file
+    saveplot : boolean
+        'True' for plotting the results
 
     Returns
     -------
-
+    j_df : DataFrame
+        results
+    input_df : DataFrame
+        input data
+    param : dict
+        parameters used in the analysis
     '''
 
     Bmodel="CHAOS-all='CHAOS-Core'+'CHAOS-Static'+'CHAOS-MMA-Primary'+'CHAOS-MMA-Secondary'"
@@ -71,7 +80,6 @@ def j1sat(dtime_beg, dtime_end, sat, res='LR', use_filter=True, \
         timebads = dat_df.index[ind_bads]      
         print(timebads.values)
         dat_df = dat_df.drop(dat_df.index[ind_bads])
-#        dat_df, timebads = GapsAsNaN(dat_df, ind_bads)
 
     if miss_data or len(ind_bads):
         print('DATA FILTERING MIGHT NOT WORK PROPERLY')

@@ -1,35 +1,53 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 29 15:29:30 2022
-
-@author: blagau
-"""
-
 import numpy as np
 import pandas as pd
-import pdb
-from viresclient import set_token
+from scipy import signal
 from viresclient import SwarmRequest
 from .utils import *
-from .fac import *
 from SwarmFACE.plot_save.three_sat_conj import *
 
 def find_3sat_conj(dtime_beg, dtime_end, delT = 120, delN=300, delE=1200, 
              jTHR=0.05, saveplot=True):
+    '''
+    High-level routine to find Swarm conjunctions above the auroral oval
 
-    Re = 6851
-    fs = 1  # Sampling frequency
-    fc = 1./20.  # Cut-off frequency of a 20 s low-pass filter
-    w = fc / (fs / 2) # Normalize the frequency
+    Parameters
+    ----------
+    dtime_beg : str
+        start time in ISO format 'YYYY-MM-DDThh:mm:ss'
+    dtime_end : str
+        end time in ISO format
+    delT : float
+        time window (in sec.) to find conjunctions
+    delN : float
+        spatial range along North-South (in km) to find conjunctions
+    delE : float
+        spatial range along East-West (in km) to find conjunctions
+    jTHR : float
+        threshold to neglect small FAC densities
+    saveplot : boolean
+        'True' for plotting the results
+
+    Returns
+    -------
+    conj_df : DataFrame
+        details on the identified conjunctions
+    param : dict
+        parameters used in the analysis
+    '''
+
+    Re = 6800           # approx. value for Swarm orbit radius
+    fs = 1              # Sampling frequency
+    fc = 1./20.         # Cut-off frequency of a 20 s low-pass filter
+    w = fc / (fs / 2)   # Normalize the frequency
     butter_ord = 5
     bf, af = signal.butter(butter_ord, w, 'low')
     
-#    Bmodel="CHAOS-all='CHAOS-Core'+'CHAOS-Static'+'CHAOS-MMA-Primary'+'CHAOS-MMA-Secondary'"
     request = SwarmRequest()
     sats=['A','B','C']
     nsc = len(sats)
-    
+
     # Retieses the L2 FAC data from the ESA database 
     orbs = np.full((nsc,2),np.nan)
     fac_df, tlarges = ([] for i in range(2))
@@ -97,7 +115,6 @@ def find_3sat_conj(dtime_beg, dtime_end, delT = 120, delN=300, delE=1200,
         for jj in range(len(qorbs)):
             qpar_jj = list(find_ao_margins(qorbs[jj])[2:7])
             qpar_jj.extend([begend_qor[jj], begend_qor[jj+1], orbs[sc, 0]+jj/4.])
-#            if (qpar_jj[0] != np.nan):
             if  pd.notna(qpar_jj[0]):
                 qparsc_df.loc[len(qparsc_df)] = qpar_jj
         qpar_df.append(qparsc_df) 

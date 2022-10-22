@@ -1,38 +1,78 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 26 19:03:27 2022
-
-@author: blagau
-"""
-
 import numpy as np
 import pandas as pd
-from viresclient import set_token
 from viresclient import SwarmRequest
-from .utils import *
 from .fac import *
-
+from .utils import *
 from SwarmFACE.plot_save.dual_sat_SVD import *
 
-def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5, use_filter=True, \
-            er_db=0.5, tauast= 0.13, taunul= 0.07, intpol='Linear', angTHR = 30., \
-            savedata=True, saveplot=True):
-    
+def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
+             use_filter=True, er_db=0.5, tauast= 0.13, taunul= 0.07, intpol='Linear',
+             angTHR=30., saveconf=False, savedata=True, saveplot=True):
+    '''
+    High-level routine to estimate the FAC density with dual-satellite Singular 
+    Value Decomposition method
+
+    Parameters
+    ----------
+    dtime_beg : str
+        start time in ISO format 'YYYY-MM-DDThh:mm:ss'
+    dtime_end : str
+        end time in ISO format
+    sats : [str, str]
+        satellite pair, e.g. ['A', 'C']
+    tshift : [float, float]
+        array of time shifts (in seconds) to be introduced in satellite data
+        in order to achieve the desired quad configuration
+    dt_along : int
+        quad’s length in the along track direction (in seconds of
+        satellite travel distance)
+    use_filter : boolean
+        'True' for data filtering
+    er_db : float
+        error in magnetic field measurements
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and
+        the quad's plane
+    tauast : float
+        value between [0, 1]. tauast >= taunul. The interval [taunul, tauast]
+        is  used to match the 1D and 2D gradient estimators
+    taunul : float
+        value between [0, 1]. Below this threshold value the quad is considered degenerated
+    intpol : str
+         interpolation method used for matching the 1D and 2D gradient
+         estimators. Should be 'Linear', 'Cubic', or None
+    saveconf : boolean
+        'True' for adding the quad's parameters in the results        
+    savedata : boolean
+        'True' for saving the results in an ASCII file
+    saveplot : boolean
+        'True' for plotting the results
+
+    Returns
+    -------
+    j_df : DataFrame
+        results
+    input_df : DataFrame
+        input data
+    param : dict
+        parameters used in the analysis
+    '''
+
     Bmodel="CHAOS-all='CHAOS-Core'+'CHAOS-Static'+'CHAOS-MMA-Primary'+'CHAOS-MMA-Secondary'"    
     dti = pd.date_range(start = dtime_beg, end = dtime_end, freq='s', closed='left')
     ndti = len(dti)
     nsc = len(sats)
     timebads={'sc0':None,'sc1':None}
     
-    Rsph, QDref, Bsw, Bmod, dBnec, R, B, dB = (np.full((ndti,nsc,3),np.nan) for i in range(8))    
-    AscLon = np.full((ndti,nsc),np.nan)
+    Rsph, QDref, Bsw, Bmod, dBnec, R, B, dB = (np.full((ndti,nsc,3),np.nan) for i in range(8))
     
     request = SwarmRequest()
     for sc in range(nsc):
         request.set_collection("SW_OPER_MAG"+sats[sc]+"_LR_1B")
         request.set_products(measurements=["B_NEC"], models=[Bmodel],
-                             auxiliaries=['QDLat','QDLon','MLT','AscendingNodeLongitude'],                             
+                             auxiliaries=['QDLat','QDLon','MLT'],
                              sampling_step="PT1S")
         data = request.get_between(start_time = dtime_beg, end_time = dtime_end,
                                    asynchronous=True)   
@@ -55,8 +95,7 @@ def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5, use_filter=T
         # Stores position, magnetic field and magnetic model vectors in arrays
         # Takes care of the optional time-shifts introduced between the sensors
         Rsph[:,sc,:] = dat_df[['Latitude','Longitude','Radius']].values
-        QDref[:,sc,:] = dat_df[['QDLat','QDLon','MLT']].values    
-        AscLon[:,sc] = dat_df['AscendingNodeLongitude'].values
+        QDref[:,sc,:] = dat_df[['QDLat','QDLon','MLT']].values
         Bsw[:,sc,:] = np.stack(dat_df['B_NEC'].values, axis=0)
         Bmod[:,sc,:] = np.stack(dat_df['B_NEC_CHAOS-all'].values, axis=0)  
         # Computes magnetic field perturbation in NEC
@@ -68,7 +107,6 @@ def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5, use_filter=T
         dB[:,sc,:] = np.matmul(MATnec2geo_sc,np.squeeze(dBnec[:,sc,:])[...,None]).reshape(-1,3)
     
     if tshift is None:
-#        tshift = find_tshift2sat_proxy(dtime_beg, sats, Rsph, AscLon)
         tshift = find_tshift2sat(dti, Rsph, sats)
  
     ts = np.around(np.array(tshift) - min(tshift))
@@ -110,7 +148,7 @@ def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5, use_filter=T
     
     j_df = svd_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, tauast= tauast, 
                         taunul= taunul, intpol=intpol, angTHR=angTHR, 
-                        use_filter=use_filter)
+                        use_filter=use_filter, saveconf=saveconf)
 
     param = {'dtime_beg':dtime_beg,'dtime_end':dtime_end,'sats': sats, \
              'tshift':ts, 'dt_along':dt_along, 'angTHR': angTHR, 'tauast':tauast,

@@ -7,6 +7,7 @@ Created on Wed Apr  6 16:08:05 2022
 """
 import numpy as np
 import pandas as pd
+from scipy import signal
 import sys
 from .utils import *
 
@@ -14,6 +15,42 @@ muo = 4*np.pi*1e-7
     
 def singleJfac(t, R, B, dB, alpha= None, N2d= None, N3d= None, tincl= None, 
                res = 'LR', er_db= 0.5, angTHR= 30., use_filter= True):
+    '''
+    Estimate the FAC density with single-satellite method
+
+    Parameters
+    ----------
+    t: pandas.Index
+        time stamps
+    R : numpy.array
+        satellite vector position in GEO frame
+    B : numpy.array
+        magnetic field vector in GEO frame
+    dB : numpy.array
+        magnetic perturbation vector in GEO frame
+    alpha : float
+        angle in the tangential plane between the (projection of) current sheet normal and the satellite velocity
+    N3d : [float, float, float]
+        current sheet normal vector in GEO frame
+    N2d : [float, float, float]
+        projection of the current sheet normal on the tangential plane
+    tincl : [datetime, datetime]
+         time interval when the information on current sheet inclination is valid
+    res : str
+        data resolution, 'LR' or 'HR'
+    er_db : float
+        error in magnetic field measurements
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and the tangential plane
+    use_filter : boolean
+        'True' for data filtering
+
+    Returns
+    -------
+    j_df : DataFrame
+        results, including FAC and IRC densities
+    '''
+
     # Constructs the differences & values at mid-intervals
     dt = t[1:].values - t[:-1].values
     tmid = t[:-1].values + dt*0.5
@@ -46,7 +83,6 @@ def singleJfac(t, R, B, dB, alpha= None, N2d= None, N3d= None, tincl= None,
 
     # considers the validity interval of FAC inclination 
     if tincl is not None:
-#        if isinstance(tincl[0], str): tincl = pd.to_datetime(tincl)
         ind_incl = np.where((tmid >= tincl[0]) & (tmid <= tincl[1]))[0]
         if len(ind_incl) == 0:
             print('*********************************************************')
@@ -198,7 +234,7 @@ def recivec2s(R4s):
     return Q4s, Rc, nuvec, condnum, nonplan, tracer, traceq
 
 def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30., 
-                errTHR=0.1, use_filter= True):
+                errTHR=0.1, use_filter= True, saveconf=False):
 
     ndt = len(dt)
     ndt4 = ndt - dt_along    
@@ -233,7 +269,6 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     # Estimates the errors in Jn
     Jn_er = 1e-6*er_db/muo*np.sqrt(traceq)
     Jb_er = Jn_er/np.absolute(cosBN)    
- 
     bad_err = np.where(Jn_er > errTHR)    
     Jb[bad_ang] = np.nan   
     Jb[bad_err], Jn[bad_err]  = (np.nan for i in range(2))
@@ -267,6 +302,11 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
                 columns=['Rmid_x','Rmid_y','Rmid_z','FAC','Jn','FAC_er','Jn_er',
                          'FAC_flt','Jn_flt','FAC_flt_er','Jn_flt_er', 'angBN', 
                          'CN2'], index=dt4)    
+    if saveconf == True:
+        # orders the quad's vertices and computes its parameters 
+        EL, EM, el, em  = SortVertices(R4s, dB4s)[7:]        
+        j_df = j_df.assign(EL=EL, EM=EM, el=el, em=em)    
+    
     return j_df
     
 def qmatrix(R,tau=0.1):
@@ -311,8 +351,8 @@ def qmatrix_intpol(R,tauast=0.13, taunul=0.07, intpol='Linear'):
     AD = ff.sum(axis=-1)
     return Q,AD,Vt,S     
 
-def svd_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, tauast= 0.13, 
-                 taunul= 0.07, intpol='Linear', angTHR= 30., use_filter= True):
+def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
+                 intpol='Linear', angTHR=30., use_filter=True, saveconf=False):
     """ SVD FAC estimator for planar arrays """
 
     ndt = len(dt)
@@ -388,7 +428,11 @@ def svd_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, tauast= 0.13,
                 columns=['Rmid_x','Rmid_y','Rmid_z','FAC','Jn','FAC_er','Jn_er',
                          'FAC_flt','Jn_flt','FAC_flt_er','Jn_flt_er', 'angBN', 
                          'AD','tau'], index=dt4)  
-    
+    if saveconf == True:
+        # orders the quad's vertices and computes its parameters 
+        EL, EM, el, em  = SortVertices(R4s, dB4s)[7:]        
+        j_df = j_df.assign(EL=EL, EM=EM, el=el, em=em)    
+        
     return j_df
 
 def calcBI(R4, dB4):
@@ -406,7 +450,7 @@ def calcBI(R4, dB4):
     return 0.5*(int_along + int_cross)/area
 
 def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30., 
-                errTHR=0.1, use_filter= True):
+                errTHR=0.1, use_filter= True, saveconf= False):
 
     ndt = len(dt)
     ndt4 = ndt - dt_along    
@@ -419,7 +463,8 @@ def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     # orders the quad's vertices and computes the trace of BI reciprocal tensors 
     # The new 0,1,2,and 3 vertices are situated in quadrants Q3, Q4, Q1, and Q2
     # of the local proper reference    
-    R4sa, dB4sa, trBI, Rc, nuvec, satsort  = SortVertices(R4s, dB4s)[0:6] 
+    R4sa, dB4sa, trBI, Rc, nuvec, satsort, trLS, EL, EM, el, em  = \
+                                                    SortVertices(R4s, dB4s)
     # computes the direction of (un-subtracted) local magnetic field Bunit and 
     # the orientation of spacecraft plane with respect to Bunit (cosBN and angBN). 
     # Stores times when B is too close to the spacecraft plane, set by angTHR.    
@@ -434,7 +479,7 @@ def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     # Estimates the errors in Jn
     Jn_er = 1e-6*er_db/muo*np.sqrt(trBI)
     Jb_er = Jn_er/np.absolute(cosBN)  
-    
+
     bad_err = np.where(Jn_er > errTHR)    
     Jb[bad_ang] = np.nan   
     Jb[bad_err], Jn[bad_err]  = (np.nan for i in range(2))
@@ -466,5 +511,8 @@ def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
                                   angBN)).transpose(),
                 columns=['Rmid_x','Rmid_y','Rmid_z','FAC','Jn','FAC_er','Jn_er',
                          'FAC_flt','Jn_flt','FAC_flt_er','Jn_flt_er', 'angBN'], index=dt4)    
+    if saveconf == True:
+        j_df = j_df.assign(EL=EL, EM=EM, el=el, em=em)
+    
     return j_df
 

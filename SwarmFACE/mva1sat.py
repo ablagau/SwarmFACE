@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 28 13:02:09 2022
 
-@author: blagau
-"""
 import numpy as np
 import pandas as pd
-from scipy import signal
 import datetime as dtm
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
@@ -15,8 +10,6 @@ from matplotlib.widgets import SpanSelector
 import sys
 import warnings
 warnings.filterwarnings('ignore')
-
-from viresclient import set_token
 from viresclient import SwarmRequest
 from .utils import *
 from .fac import *
@@ -24,7 +17,35 @@ from .j1sat import j1sat
 from SwarmFACE.plot_save.single_sat_MVA import *
 
 def get_data_mva1sat(dtime_beg, dtime_end, sat, use_filter=True):
-    
+    '''
+    Prepare and plot data on the screen to interactively select the
+    MVA interval
+
+    Parameters
+    ----------
+    dtime_beg : str
+        start time in ISO format 'YYYY-MM-DDThh:mm:ss'
+    dtime_end : str
+        end time in ISO format
+    sat : [str]
+        satellite, e.g. ['A']
+    use_filter : boolean
+        'True' for data filtering
+
+    Returns
+    -------
+    j_df : DataFrame
+        FAC density from single-satellite method
+    input_df : DataFrame
+        input data (includes magnetic field perturbation)
+    param : dict
+        parameters used in the analysis
+    span_sel : dict
+        new MVA start and stop time
+    span : reference
+        reference to SpanSelector to prevent it from being garbage collected
+    '''
+
     Bmodel="CHAOS-all='CHAOS-Core'+'CHAOS-Static'+'CHAOS-MMA-Primary'+'CHAOS-MMA-Secondary'"
     request = SwarmRequest()    
     # identify the right half-orbit interval     
@@ -89,8 +110,38 @@ def get_data_mva1sat(dtime_beg, dtime_end, sat, use_filter=True):
 
     return j_df, input_df, param, span_sel, span
  
-def perform_mva1sat(j_df, input_df, param, span_sel, savedata=True, saveplot=True):
-    
+def perform_mva1sat(j_df, input_df, param, span_sel, savedata=True,
+                    saveplot=True):
+    '''
+    Perform the MVA analysis on the data provided by get_data_mva1sat
+
+    Parameters
+    ----------
+    j_df : DataFrame
+        FAC density from single-satellite method
+    input_df : DataFrame
+        input data (includes magnetic field perturbation)
+    param : dict
+        parameters used in the analysis
+    span_sel : dict
+        new MVA start and stop time
+    savedata : boolean
+        'True' for saving the results in an ASCII file
+    saveplot : boolean
+        'True' for plotting the results
+
+    Returns
+    -------
+    jcorr_df : DataFrame
+        corrected (for current sheet inclination) FAC density
+    dBmva_df : DataFrame
+        magnetic field perturbation in MVA frame
+    mva_df : DataFrame
+        MVA results, FAC planarity and inclination
+    param : dict
+        parameters used in the analysis
+    '''
+
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end'] 
     sat = param['sat']
@@ -169,18 +220,3 @@ def perform_mva1sat(j_df, input_df, param, span_sel, savedata=True, saveplot=Tru
         plot_mva1sat(j_df, input_df, jcorr_df, dBmva_df, mva_df, param)
     
     return jcorr_df, dBmva_df, mva_df, param
-   
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

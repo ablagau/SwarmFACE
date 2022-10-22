@@ -9,7 +9,6 @@ Created on Wed Apr  6 14:45:32 2022
 import numpy as np
 import pandas as pd
 from scipy import signal
-from viresclient import set_token
 from viresclient import SwarmRequest
 
 def normvec(v):
@@ -251,17 +250,18 @@ def SortVertices(R4s, dB4s):
         R4sa[:,:,jj] = np.take_along_axis(R4s[:,:,jj], satsort, -1)   
         dB4sa[:,:,jj] = np.take_along_axis(dB4s[:,:,jj], satsort, -1)        
         R4p[:,:,jj] = np.take_along_axis(R4p[:,:,jj], satsort, -1)
+        
     # computes quad's parameters     
-    EL = np.abs(np.mean(R4p[:, 0:2, 1], axis = -1))
-    EM = 0.5*np.abs(R4p[:, 1, 0] - R4p[:, 0, 0])
-    el = np.abs(np.mean(R4p[:, 0:2, 0], axis = -1))
-    em = 0.5*np.abs(R4p[:, 1, 1] - R4p[:, 0, 1])      
+    EL = 0.5*np.abs(np.mean(R4p[:, 0:2, 1], axis = -1)) + \
+            0.5*np.abs(np.mean(R4p[:, 2:, 1], axis = -1))
+    EM = 0.25*np.abs(R4p[:, 1, 0] - R4p[:, 0, 0]) + \
+            0.25*np.abs(R4p[:, 2, 0] - R4p[:, 3, 0])
+    el = 0.5*np.abs(np.mean(R4p[:, 0:2, 0], axis = -1)) + \
+            0.5*np.abs(np.mean(R4p[:, 2:, 0], axis = -1))
+    em = 0.25*np.abs(R4p[:, 1, 1] - R4p[:, 0, 1]) + \
+            0.25*np.abs(R4p[:, 2, 1] - R4p[:, 3, 1])
     # computes the trace of the BI and LS reciprocal tensors
     D = 16*((EL*EM)**2 + (EM*em)**2 + (el*em)**2)
     trLS = 4/D*(EM**2 + el**2 + EL**2 + em**2)
     trBI = 0.25/((EL*EM)**2)*(EM**2 + EL**2 + el**2)
-    return R4sa, dB4sa, trBI, Rmeso, nuvec, satsort, trLS, EL, EM, el, em    
-
-
-
-   
+    return R4sa, dB4sa, trBI, Rmeso, nuvec, satsort, trLS, EL, EM, el, em

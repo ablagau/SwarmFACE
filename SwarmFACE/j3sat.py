@@ -1,20 +1,47 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 25 20:59:50 2022
-
-@author: blagau
-"""
 import numpy as np
 import pandas as pd
-from viresclient import set_token
 from viresclient import SwarmRequest
-from .utils import *
 from .fac import *
+from .utils import *
 from SwarmFACE.plot_save.three_sat import *
 
-def j3sat(dtime_beg, dtime_end, tshift=[0,0,0], use_filter=True, \
-            er_db=0.5, angTHR = 30.,savedata=True, saveplot=True):
+def j3sat(dtime_beg, dtime_end, tshift=[0,0,0], use_filter=True,
+          er_db=0.5, angTHR = 30.,savedata=True, saveplot=True):
+    '''
+    High-level routine to estimate the FAC density with three-satellite method
+
+    Parameters
+    ----------
+    dtime_beg : str
+        start time in ISO format 'YYYY-MM-DDThh:mm:ss'
+    dtime_end : str
+        end time in ISO format
+    tshift : [float, float, float]
+        array of time shifts (in seconds) to be introduced in satellite data
+        in order to achieve a more favorable configuration
+    use_filter : boolean
+        'True' for data filtering
+    er_db : float
+        error in magnetic field measurements
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and
+        the spacecraft plane
+    savedata : boolean
+        'True' for saving the results in an ASCII file
+    saveplot : boolean
+        'True' for plotting the results
+
+    Returns
+    -------
+    j_df : DataFrame
+        results
+    input_df : DataFrame
+        input data
+    param : dict
+        parameters used in the analysis
+    '''
 
     sats=['A','B','C']
     Bmodel="CHAOS-all='CHAOS-Core'+'CHAOS-Static'+'CHAOS-MMA-Primary'+'CHAOS-MMA-Secondary'"    

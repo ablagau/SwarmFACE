@@ -1,24 +1,54 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun  6 11:08:08 2022
-
-@author: blagau
-"""
-
 import numpy as np
 import pandas as pd
-from viresclient import set_token
+from scipy import signal
 from viresclient import SwarmRequest
 from .utils import *
 from .fac import *
 from SwarmFACE.plot_save.saveplot_qi import *
 
 def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
+    '''
+    High-level routine to automatically estimate the quality indices of
+    FAC structures
 
-    fs = 1  # Sampling frequency
-    fc = 1./20.  # Cut-off frequency of a 20 s low-pass filter
-    w = fc / (fs / 2) # Normalize the frequency
+    Parameters
+    ----------
+    dtime_beg : str
+        start time in ISO format 'YYYY-MM-DDThh:mm:ss'
+    dtime_end : str
+        end time in ISO format
+    swB : boolean
+        'True' to  the MVA based quality indices for Swarm B
+    jTHR : float
+        threshold to neglect small FAC densities
+    saveplot : boolean
+        'True' for plotting the results
+
+    Returns
+    -------
+    input_df : list
+        list of DataFrames (one per satellite per quarter-orbit
+         section) with input data
+    RBdBAng_df : list
+         list of DataFrrames (one per satellite per quarter-orbit
+         section) with intermediate variables
+    fac_df : list
+        list of DataFrrames (one per satellite per quarter-orbit
+        section) with estimated single=satellite FAC data
+    qimva_df : DataFrame
+        MVA results, FAC planarity, and FAC inclination
+    qicc_df : DataFrame
+        results from the correlation analysis between the magnetic
+        field perturbations at the lower Swarm satellites
+    param : dict
+        parameters used in the analysis
+    '''
+
+    fs = 1              # Sampling frequency
+    fc = 1./20.         # Cut-off frequency of a 20 s low-pass filter
+    w = fc / (fs / 2)   # Normalize the frequency
     butter_ord = 5
     bf, af = signal.butter(butter_ord, w, 'low')
     
@@ -91,7 +121,6 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
         for jj in range(nrq[sc]):
             # store position, magnetic field and magnetic model vectors as data array
             dat_df = qorbs_Bnec[sc][jj]
-            timebads = None
             ndt = (dat_df.index[-1] - dat_df.index[0]).total_seconds() + 1
             nr_miss_data = ndt - len(dat_df)
             if nr_miss_data:
@@ -99,7 +128,6 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
                        str(orbs[sc,0]+ jj/4) +': '+ str(nr_miss_data))    
             ind_bads= np.where(np.linalg.norm(np.stack(dat_df['B_NEC'].values), axis=1)==0)[0]
             if len(ind_bads):
-#                dat_df, timebads = GapsAsNaN(dat_df, ind_bads)
                 print('NR. OF BAD DATA POINTS FOR Sw'+sats[sc]+ ' orbit '+\
                        str(orbs[sc,0]+ jj/4) +': ', len(ind_bads))
                 print(dat_df.index[ind_bads].values)
@@ -109,7 +137,6 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
             badpts[sc].append(nr_miss_data + len(ind_bads))
             
             ti = dat_df.index
-            nti = len(ti)
             # stores position, magnetic field and magnetic model vectors in 
             # corresponding data matrices
             Rsph = dat_df[['Latitude','Longitude','Radius']].values
@@ -137,7 +164,7 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
 
     # for each quarter orbit computes the optimum time lag and the correlation
     # coefficient between magnetic perturbation on satellites 'A' and 'C'    
-    qicc_df, Bcc_df = qorbsCC(sats, orbs, qimva_df, qorbs_dBmva)
+    qicc_df, Bcc_df = qorbsCC(sats, qimva_df, qorbs_dBmva)
 
     param = {'dtime_beg':dtime_beg,'dtime_end':dtime_end,'sats': sats, 'jTHR':jTHR}
 
@@ -148,7 +175,8 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
 
     # prepare a compact output    
     input_df = qorbs_Bnec
-    RBdBAng_df = [[[] for i in range(nrq[sc])] for j in range(nsc)]
+    # below one uses swA because is a lower sat. i.e. with smaller orbital period
+    RBdBAng_df = [[[] for i in range(nrq[0])] for j in range(nsc)] 
     for sc in range(nsc):
         for jj in range(nrq[sc]):
             tmp_df = qorbs_dB[sc][jj].copy()
@@ -158,8 +186,34 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
     
     return input_df, RBdBAng_df, fac_df, qimva_df, qicc_df, param
 
-
 def qorbsMVA(sats, orbs, qorbs_dB, qorbs_fac):
+    '''
+    Automatically estimate the MVA related quality indices of
+    FAC structures
+
+    Parameters
+    ----------
+    sats : list
+        satellites entering the analysis, e.g. ['A', 'C'] or ['A', 'B', 'C']
+    orbs : array
+        array of integers of size [nr. sat, 2], indicate for each satellite
+        the start and end orbit numbers
+    qorbs_dB : list
+        list of DataFrrames (one per satellite per quarter-orbit
+        section) with magnetic field perturbation in GEO frame
+    fac_df : list
+        list of DataFrrames (one per satellite per quarter-orbit
+        section) with estimated single=satellite FAC data
+
+    Returns
+    -------
+    qimva_df : DataFrame
+        MVA results, FAC planarity, and FAC inclination
+    qorbs_dBmva : list
+        list of DataFrrames (one per satellite per quarter-orbit
+        section) with magnetic field perturbation in MVA frame
+    '''
+
      # for each sat / quarter orbit computes AO location/extenssion and applies MVA
     nsc = len(sats)
     col_qi = ['sat', 'orbit','TbegMVA', 'TendMVA', 'lmin', 'lmax', 'lrat', 
@@ -234,8 +288,32 @@ def qorbsMVA(sats, orbs, qorbs_dB, qorbs_fac):
         qorbs_dBmva.append(Bmvasc_df) 
     return qimva_df, qorbs_dBmva
 
+def qorbsCC(sats, qimva_df, qorbs_dBmva):
+    '''
+    Perform correlation analysis between the magnetic field
+    perturbations at the lower Swarm satellite
 
-def qorbsCC(sats, orbs, qimva_df, qorbs_dBmva):
+    Parameters
+    ----------
+    sats : list
+        satellites entering the analysis, e.g. ['A', 'C'] or ['A', 'B', 'C']
+    qimva_df : DataFrame
+        MVA results, FAC planarity, and FAC inclination
+    qorbs_dBmva : list
+        list of DataFrrames (one per satellite per quarter-orbit section)
+        with magnetic field perturbation in MVA frame
+
+    Returns
+    -------
+    qicc_df : DataFrame
+        results from the correlation analysis between the magnetic
+        field perturbations at the lower Swarm satellites
+    Bcc_df : list
+        list of DataFrrames (one per quarter-orbit section)
+        with magnetic field perturbation of the reference satellite
+        along the maximum magnetic variance direction
+    '''
+
     # for each quarter orbit computes the optimum time lag and the correlation
     # coefficient between magnetic perturbation on satellites 'A' and 'C'
     dt_mva = [[] for i in range(len(sats))]
