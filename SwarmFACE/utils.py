@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Apr  6 14:45:32 2022
-
-@author: blagau
-"""
 
 import numpy as np
 import pandas as pd
@@ -12,30 +7,96 @@ from scipy import signal
 from viresclient import SwarmRequest
 
 def normvec(v):
-    # Given an array of vectors v, the function returns 
-    # the corresponding array of unit vectors
+    '''
+    Return array of unit vectors
+
+    Parameters
+    ----------
+    v : numpy.array
+        vectors
+    Returns
+    -------
+    numpy.array of unit vectors
+    '''
+
     return np.divide(v,np.linalg.norm(v,axis=-1).reshape(-1,1))
 
 def rotvecax(v, ax, ang):
-    # Rotates vector v by angle ang around a normal vector ax 
-    # Uses Rodrigues' formula when v is normal to ax
+    '''
+    Rotates vector v by angle ang around a normal vector ax.
+    Uses Rodrigues' formula when v is normal to ax
+
+    Parameters
+    ----------
+    v : numpy.array
+        vector(s)
+    ax : numpy.array
+        normal vector(s)
+    ang : numpy.array
+        angle(s)
+
+    Returns
+    -------
+    vector or array of vectors
+    '''
+
     sa, ca = np.sin(np.deg2rad(ang)), np.cos(np.deg2rad(ang))
     return v*ca[...,np.newaxis] + np.cross(ax, v)*sa[...,np.newaxis]
 
 def sign_ang(V, N, R):
-    # returns the signed angle between vectors V and N, perpendicular 
-    # to R; positive sign corresponds to right hand rule along R
+    '''
+    Return the signed angle between vectors V and N, perpendicular
+    to R; positive sign corresponds to right hand rule along R
+
+    Parameters
+    ---------
+    V, N, R : numpy.array
+        vectors
+
+    Return
+    ------
+    angle(s)
+    '''
+
     VxN = np.cross(V, N)
     pm = np.sign(np.sum(R*VxN, axis=-1))
     return np.degrees(np.arcsin(pm*np.linalg.norm(VxN, axis=-1)))  
 
 def sign_dang(ang2, ang1):
+    '''
+    Return the difference between two angles in [-180, 180]
+    deg. interval
+
+    Parameters
+    ---------
+    ang1, ang2 : numpy.array
+        angles in degrees
+
+    Return
+    ------
+    numpy.array of angles
+    '''
+
     a = ang2-ang1
     return (a + 180) % 360 - 180
   
 def R_in_GEOC(Rsph):
-    """Returns Swarm position in cartesian GEO frame and 
-    the rotation matrix from NEC to GEO"""
+    '''
+    Returns Swarm position in cartesian GEO frame and
+    the rotation matrix from NEC to GEO
+
+    Parameters
+    ---------
+    Rsph : numpy.array
+        satellite position in spherical GEO frame
+
+    Return
+    ------
+    R : numpy.array
+        satellite position in cartesian GEO frame
+    array of rotation matrices from NEC to GEO
+    '''
+
     latsc = np.deg2rad(Rsph[:,0])
     lonsc = np.deg2rad(Rsph[:,1])  
     radsc = 0.001*Rsph[:,2]
@@ -106,29 +167,21 @@ def check_Bdata(dat_df, sat_str, ndt):
     return dat_df, miss_data, tgaps
 
 def res_param(res):
+    '''
+    Return sampling step and sampling frequency acording to
+    Swarm magnetic data resolution
+
+    Parameters
+    --------
+        res : string
+            'HR' or 'LR'
+    Returns
+    -------
+        sampling step (string) and sampling frequency (int)
+    '''
     sstep = 'PT1S' if res=='LR' else 'PT0.019S'  # sampling step
     fs = 1 if res=='LR' else 50   # data sampling freq.
     return sstep, fs
-
-def find_tshift2sat_proxy(dtime_beg, sats, Rsph, AscLon):
-    request = SwarmRequest()
-    AscNodeSats = []
-    for ii in range(2):
-        orb = request.get_orbit_number(sats[ii], dtime_beg, mission='Swarm')
-        AscNodeSats.append(request.get_times_for_orbits(orb, orb, spacecraft=sats[ii]))
-    AscLag = 0.5*(AscNodeSats[1][0] - AscNodeSats[0][0]).total_seconds() +\
-              0.5*(AscNodeSats[1][1] - AscNodeSats[0][1]).total_seconds()
-    # Compensate for the orbit inclination
-    Rorb = np.nanmean(Rsph[:,0,2],axis=0)
-    Torb = (AscNodeSats[0][1] - AscNodeSats[0][0]).total_seconds()
-    Vorb = 2*np.pi*Rorb/Torb     
-    Oinc = np.deg2rad(90 - 87.35)
-    dlon = np.abs((AscLon[0,1] - AscLon[0,0] + 180) % 360 - 180)
-    Deq = dlon*2*np.pi*Rorb/360
-    Tcorr = Deq*np.tan(Oinc)/Vorb
-    tshift = [int(-np.sign(AscLag)*round(np.abs(AscLag) + Tcorr)), 0]
-    print(tshift)
-    return tshift
 
 def find_tshift2sat(dti, Rsph, sats):
     """compute orbital phase lag [in sec.] between two satellites"""
@@ -162,8 +215,21 @@ def find_tshift2sat(dti, Rsph, sats):
     return tshift
 
 def split_into_sections(df, begend_arr):
-    """Splits the original dataframe df in sections according to 
-    time moments from begend_arr array. Returns a list of dataframes"""
+    '''
+    Splits the original DataFrame object df in more DataFrame
+    objects according to time moments from begend_arr array.
+
+    Parameters
+    ---------
+    df : DataFrame
+        time indexed DataFrame object
+    begend_arr : list
+        time moments
+
+    Returns
+        list of DataFrame objects
+    '''
+
     secorbs = []
     for start, end in zip(begend_arr[0:-1], begend_arr[1:]):
         secorb = df[start:end]
@@ -206,8 +272,23 @@ def find_ao_margins(df, fac_qnt = 'FAC_flt_sup', rez_qd = 100):
                 qd_trend, qd_sign, ti_arr, qd_arr
     
 def mva(v, cdir = None):
-    """returns results of MVA on the array of 3D vector v. If cdir (3D vector) 
-    is provided, the analysis is performed in the plane perpendiculat to it"""
+    '''
+    Return results of Minimum Variance Analysis on an array of
+    3D vector v. If cdir (3D vector) is provided, the analysis
+    is performed in the plane perpendiculat to it
+
+    Parameters
+    ----------
+    v : numpy.array
+        3D vectors
+    cdir : numpy.array
+        direction to constrain MVA
+
+    Returns
+    -------
+    array with eigenvalues and eigenvectors from MVA
+    '''
+
     v_cov = np.cov(v, rowvar=False, bias=True)
     if cdir is not None:
         ccol = cdir.reshape(3,1)
@@ -217,8 +298,37 @@ def mva(v, cdir = None):
     return np.linalg.eigh(v_cov)
 
 def SortVertices(R4s, dB4s):
-    """ sort the quad's vertices in correct order, computes quad's 
-    parameters and the trace of the BI and LS reciprocal tensors"""
+    '''
+    Sort the quad's vertices in correct order; compute quad's
+    parameters and the trace of the BI and LS reciprocal tensors.
+
+    Parameters
+    ----------
+    R4s : numpy.array
+        position vectors of the apexes in format [index, apex, comp]
+    dB4s : numpy.array
+        magnetic perturbation vectors at the apexes in format
+        [index, apex, comp]
+
+    Returns
+    -------
+    R4sa, dB4sa : numpy.arrays
+        position and magnetic perturbation vectors sorted
+        in correct order
+    trBI : numpy.array
+        trace of the reciprocal tensor in LS method
+    Rmeso : numpy.array
+        position of the mesocenter
+    nuvec : numpy.array
+        normal to the quad
+    satsort : numpy.array
+        satellite indeces in the correct order
+    trLS : numpy.array
+        trace of the reciprocal tensor in LS method
+    EL, EM, el, em : numpy.arrays
+        parameters of the four-point configuration
+     '''
+
     Rmeso = np.mean(R4s, axis=-2)
     R4smc = R4s - Rmeso[:, np.newaxis, :]
     Rtens = np.sum(np.matmul(R4smc[:,:,:,None],R4smc[:,:,None, :]), axis = -3)

@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Apr  6 16:08:05 2022
 
-@author: blagau
-"""
 import numpy as np
 import pandas as pd
 from scipy import signal
@@ -29,7 +25,8 @@ def singleJfac(t, R, B, dB, alpha= None, N2d= None, N3d= None, tincl= None,
     dB : numpy.array
         magnetic perturbation vector in GEO frame
     alpha : float
-        angle in the tangential plane between the (projection of) current sheet normal and the satellite velocity
+        angle in the tangential plane between the (projection of) current
+        sheet normal and the satellite velocity
     N3d : [float, float, float]
         current sheet normal vector in GEO frame
     N2d : [float, float, float]
@@ -132,7 +129,30 @@ def singleJfac(t, R, B, dB, alpha= None, N2d= None, N3d= None, tincl= None,
 
 
 def recivec3s(R):
-    # computes the reciprocal vectors for a three-s/c configuration
+    '''
+    Compute the reciprocal vectors for a three-satellites configuration
+
+    Parameters
+    ----------
+    R : numpy.array
+        satellites vector position in format [index, sc, comp]
+
+    Returns
+    -------
+    Rc : numpy.array
+        position of the mesocenter
+    Rmeso : numpy.array
+        satellites position in the mesocentric frame
+    nuvec : numpy.array
+        normal to the spacecraft plane
+    Q3S : numpy.array
+        generalized reciprocal vectors
+    Qtens : numpy.array
+        reciprocal tensor
+    Rtens : numpy.array
+        position tensor
+     '''
+
     Rc = np.mean(R, axis=-2)
     Rmeso = R - Rc[:, np.newaxis, :]
     r12 = Rmeso[:,1,:] - Rmeso[:,0,:]
@@ -148,7 +168,34 @@ def recivec3s(R):
     return Rc, Rmeso, nuvec, Q3S, Qtens, Rtens
 
 def threeJfac(dt, R, B, dB, er_db= 0.5, angTHR= 30., use_filter= True):
-    # computes the mesocenter of the Swarm constellation (Rc), the s/c positions 
+    '''
+    Estimate the FAC density with three-satellite method
+
+    Parameters
+    ----------
+    dt: pandas.Index
+        time stamps
+    R : numpy.array
+        satellites vector position in GEO frame
+    B : numpy.array
+        magnetic field vector in GEO frame
+    dB : numpy.array
+        magnetic perturbation vector in GEO frame
+    er_db : float
+        error in magnetic field measurements
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and the
+        spacecraft plane
+    use_filter : boolean
+        'True' for data filtering
+
+    Returns
+    -------
+    j_df : DataFrame
+        results, including FAC and normal current densities
+    '''
+
+    # computes the mesocenter of the Swarm constellation (Rc), the s/c positions
     # in the mesocentric frame (Rmeso), the direction normal to spacecraft 
     # plane (nuvec), the reciprocal vectors (Q3S), the reciprocal tensor (Qtens), 
     # and the position tensor (Rtens)    
@@ -205,6 +252,31 @@ def threeJfac(dt, R, B, dB, er_db= 0.5, angTHR= 30., use_filter= True):
     return j_df
     
 def recivec2s(R4s):
+    '''
+    Compute the reciprocal vectors of a four-point planar configuration
+
+    Parameters
+    ----------
+    R4s : numpy.array
+        position vectors of the apexes in format [index, apex, comp]
+
+    Returns
+    -------
+    Q4s : numpy.array
+        canonical base (reciprocal) vectors
+    Rc : numpy_array
+        position of the mesocenter
+    nuvec : numpy.array
+        normal to the spacecraft plane
+    condnum : numpy.array
+        condition number
+    nonplanar : numpy.array
+        nonplanarity
+    tracer : numpy.array
+        trace of the position tensor
+    traceq : numpy.array
+        trace of the reciprocal tensor
+     '''
     # computes the reciprocal vectors of a 4 point planar configuration
     # work in the mesocenter frame
     Rc = np.mean(R4s, axis=-2)
@@ -235,6 +307,38 @@ def recivec2s(R4s):
 
 def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30., 
                 errTHR=0.1, use_filter= True, saveconf=False):
+    '''
+    Estimate the FAC density with dual-satellite Least-Squares method
+
+    Parameters
+    ----------
+    dt: pandas.Index
+        time stamps
+    R : numpy.array
+        satellites vector position in GEO frame
+    B : numpy.array
+        magnetic field vector in GEO frame
+    dB : numpy.array
+        magnetic perturbation vector in GEO frame
+    dt_along : integer
+        along track separation in sec.
+    er_db : float
+        error in magnetic field measurements
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and the
+        quad plane
+    errTHR : float
+        accepted error for normal current density
+    use_filter : boolean
+        'True' for data filtering
+    saveconf : boolean
+        'True' to add the quad's parameters in the results
+
+    Returns
+    -------
+    j_df : DataFrame
+        results, including FAC and normal current densities
+    '''
 
     ndt = len(dt)
     ndt4 = ndt - dt_along    
@@ -309,18 +413,31 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     
     return j_df
     
-def qmatrix(R,tau=0.1):
-    """ rasada: compute the reciprocal vector matrix Q """
-    U,S,Vt = np.linalg.svd(R-R.mean(axis=-2)[...,None,:],full_matrices=False)
-    nondeg = S > tau*S[...,0][...,None]
-    Sinv = np.zeros(S.shape)
-    Sinv[nondeg] = 1/S[nondeg]
-    Q = np.matmul(U*Sinv[...,None,:],Vt)
-    AD = np.where(nondeg,1,0).sum(axis=-1)
-    return Q,AD,Vt,S
-
 def ffunct(tau3d,tauast=0.13,taunul=0.07,intpol='Linear'):
-    ''' Variance limitation of pseudo-inverse in rasada '''
+    '''
+    Compute coefficients for a smooth transition between 1D and 2D
+    gradient estimators in the SVD method.
+
+    Parameters
+    ----------
+    tau3d : numpy.array
+        S eigenvalues ratio
+    tauast : float
+        value between [0, 1]. tauast >= taunul. The interval [taunul, tauast]
+        is used to match the 1D and 2D gradient estimators
+    taunul : float
+        value between [0, 1]. Below this threshold value the quad is
+        considered degenerated
+    intpol : string
+        interpolation method used for matching the 1D and 2D gradient
+        estimators. Should be ‘Linear’, ‘Cubic’, or None
+
+    Returns
+    -------
+    f : numpy.array
+        coefficient to smooth transition between 1D and 2D gradient estimators
+    '''
+
     if intpol==None:
         f = np.ones(tau3d.shape)
         f[taunul>tau3d] = 0
@@ -338,7 +455,36 @@ def ffunct(tau3d,tauast=0.13,taunul=0.07,intpol='Linear'):
     return f
 
 def qmatrix_intpol(R,tauast=0.13, taunul=0.07, intpol='Linear'):
-    """ rasada: compute the reciprocal vector matrix Q """
+    '''
+    Compute the SVD reciprocal matrix of a four-point planar configuration.
+    A smooth transition between 1D and 2D gradient estimators is allowed.
+
+    Parameters
+    ----------
+    R : numpy.array
+        position vectors of the apexes in format [index, apex, comp]
+    tauast : float
+        value between [0, 1]. tauast >= taunul. The interval [taunul, tauast]
+        is used to match the 1D and 2D gradient estimators
+    taunul : float
+        value between [0, 1]. Below this threshold value the quad is
+        considered degenerated
+    intpol : string
+        interpolation method used for matching the 1D and 2D gradient
+        estimators. Should be ‘Linear’, ‘Cubic’, or None
+
+    Returns
+    -------
+    Q : numpy.array
+        reciprocal matrix
+    AD : numpy_array
+        quad degeneracy
+    Vt : numpy.array
+        orthogonal matrix from SVD decomposition of R = USVt
+    S : numpy.array
+        diagonal matrix from SVD decomposition of R = USVt
+     '''
+
     U,S,Vt = np.linalg.svd(R-R.mean(axis=-2)[...,None,:],full_matrices=False)
     tau3d = np.divide(S, S[:,0][...,None])
     ff = ffunct(tau3d,tauast=tauast,taunul=taunul,intpol=intpol) 
@@ -353,7 +499,46 @@ def qmatrix_intpol(R,tauast=0.13, taunul=0.07, intpol='Linear'):
 
 def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
                  intpol='Linear', angTHR=30., use_filter=True, saveconf=False):
-    """ SVD FAC estimator for planar arrays """
+    '''
+    Estimate the FAC density with dual-satellite Singular
+    Values Decomposition method
+
+    Parameters
+    ----------
+    dt: pandas.Index
+        time stamps
+    R : numpy.array
+        satellites vector position in GEO frame
+    B : numpy.array
+        magnetic field vector in GEO frame
+    dB : numpy.array
+        magnetic perturbation vector in GEO frame
+    dt_along : integer
+        along track separation in sec.
+    er_db : float
+        error in magnetic field measurements
+    tauast : float
+        value between [0, 1]. tauast >= taunul. The interval [taunul, tauast]
+        is used to match the 1D and 2D gradient estimators
+    taunul : float
+        value between [0, 1]. Below this threshold value the quad is
+        considered degenerated
+    intpol : string
+        interpolation method used for matching the 1D and 2D gradient
+        estimators. Should be ‘Linear’, ‘Cubic’, or None
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and the
+        quad plane
+    use_filter : boolean
+        'True' for data filtering
+    saveconf : boolean
+        'True' to add the quad's parameters in the results
+
+    Returns
+    -------
+    j_df : DataFrame
+        results, including FAC and normal current densities
+    '''
 
     ndt = len(dt)
     ndt4 = ndt - dt_along    
@@ -365,9 +550,7 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
         arr4s[:,0:2, :] = arr[:ndt4, :, :]
         arr4s[:,2:, :] = arr[dt_along:, :, :]
 
-#    Q,AD,Vt,S = qmatrix(R4s,tau=tau)
     Q,AD,Vt,S = qmatrix_intpol(R4s,tauast=tauast, taunul=taunul, intpol=intpol)
-#    CN2 = np.log10(S[...,0]/S[...,1])
     tau = S[...,1]/S[...,0]
     Rc = R4s.mean(axis=-2)
     Runit = Rc/np.linalg.norm(Rc,axis=-1)[...,None]     
@@ -395,7 +578,6 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
     Jb= Jn/cosBN     
 
     Jn_er = (1e-6/muo)*er_db*np.linalg.norm(Q,axis=(-2,-1))   
-#    Jn_er[np.where(AD!=2)] = np.nan
     Jb_er = Jn_er/np.absolute(cosBN)
   
     Jb[bad_ang] = np.nan  
@@ -436,7 +618,24 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
     return j_df
 
 def calcBI(R4, dB4):
-    # computes curlB using the discrete BI integral along a 4 point quad 
+    '''
+    Compute curlB using the discrete BI integral along a four-point
+    configuration.
+
+    Parameters
+    ----------
+    R4 : numpy.array
+        position vectors of the apexes in format [index, apex, comp]
+    dB4 : numpy.array
+        magnetic perturbation vectors at the apexes in format
+        [index, apex, comp]
+
+    Returns
+    -------
+     : numpy.array
+        curl of magnetic field perturbation
+     '''
+
     r10 = R4[:,1,:] - R4[:,0,:]
     r32 = R4[:,3,:] - R4[:,2,:]
     r21 = R4[:,2,:] - R4[:,1,:]
@@ -451,6 +650,39 @@ def calcBI(R4, dB4):
 
 def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30., 
                 errTHR=0.1, use_filter= True, saveconf= False):
+    '''
+    Estimate the FAC density with dual-satellite Boundary
+    Integral method
+
+    Parameters
+    ----------
+    dt: pandas.Index
+        time stamps
+    R : numpy.array
+        satellites vector position in GEO frame
+    B : numpy.array
+        magnetic field vector in GEO frame
+    dB : numpy.array
+        magnetic perturbation vector in GEO frame
+    dt_along : integer
+        along track separation in sec.
+    er_db : float
+        error in magnetic field measurements
+    angTHR : float
+        minimum accepted angle between the magnetic field vector and the
+        quad plane
+    errTHR : float
+        accepted error for normal current density
+    use_filter : boolean
+        'True' for data filtering
+    saveconf : boolean
+        'True' to add the quad's parameters in the results
+
+    Returns
+    -------
+    j_df : DataFrame
+        results, including FAC and normal current densities
+    '''
 
     ndt = len(dt)
     ndt4 = ndt - dt_along    
