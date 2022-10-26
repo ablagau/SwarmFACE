@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 19 18:20:41 2022
 
-@author: blagau
-"""
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 import numpy as np
@@ -15,8 +11,11 @@ warnings.filterwarnings('ignore')
 import SwarmFACE.esaL2 as esaL2
 
 def save_single_sat(j_df, param):
-    #SAVES OUTPUT TO ASCII FILES
-    #====================================
+    '''
+    Save to ASCII file results from single-satellite algorithm. Input from 
+    j1sat.py
+    '''          
+
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    
     res = param['res']
@@ -60,8 +59,11 @@ def save_single_sat(j_df, param):
     
 
 def plot_single_sat(j_df, dat_df, param):
-    #PLOTS THE RESULTS
-    #====================================    
+    '''
+    Plot results from single-satellite algorithm. Input from 
+    j1sat.py
+    '''    
+
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    
     res = param['res']

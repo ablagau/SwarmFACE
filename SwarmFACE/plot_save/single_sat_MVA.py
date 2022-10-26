@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul  5 17:22:55 2022
 
-@author: blagau
-"""
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 import numpy as np
@@ -15,8 +11,11 @@ warnings.filterwarnings('ignore')
 
 
 def save_mva1sat(jcorr_df, dBmva_df, mva_df, param):
-    #SAVES OUTPUT TO ASCII FILES
-    #====================================
+    '''
+    Save to ASCII file results from interactive MVA. Input from 
+    perform_mva1sat.py
+    '''            
+
     MVAline = mva_df.iloc[0] 
     tbeg = MVAline['TbegMVA'].strftime("%Y%m%d_%H%M%S")
     tend = MVAline['TendMVA'].strftime("%Y%m%d_%H%M%S")
@@ -62,6 +61,10 @@ def save_mva1sat(jcorr_df, dBmva_df, mva_df, param):
                      float_format = '%11.4f', header=False) 
 
 def plot_mva1sat(j_df, dat_df, jcorr_df, dBmva_df, mva_df, param):
+    '''
+    Plot results from interactive MVA. Input from 
+    perform_mva1sat.py
+    '''      
     
     MVAline = mva_df.iloc[0] 
     tbeg = MVAline['TbegMVA']

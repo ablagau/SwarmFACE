@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jan 26 11:09:38 2021
 
-@author: blagau
-"""
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 import numpy as np
@@ -15,8 +11,11 @@ warnings.filterwarnings('ignore')
 import SwarmFACE.esaL2 as esaL2
 
 def save_dual_sat_LS(j_df, param):
-    #SAVES OUTPUT TO ASCII FILES
-    #====================================
+    '''
+    Save to ASCII file results from dual-satellite LS algorithm. Input from 
+    j2satLS.py
+    '''  
+
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    
     sats = param['sats']
@@ -67,8 +66,11 @@ def save_dual_sat_LS(j_df, param):
                   float_format='%15.4f', header=False)
         
 def plot_dual_sat_LS(j_df, dat_df, param):
-    #PLOTS THE RESULTS
-    #==================================== 
+    '''
+    Plot results from dual-satellite LS algorithm. Input from 
+    j2satLS.py
+    '''
+
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    
     sats = param['sats']

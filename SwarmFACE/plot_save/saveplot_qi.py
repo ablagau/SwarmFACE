@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 19 18:20:41 2022
 
-@author: blagau
-"""
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 from viresclient import set_token
@@ -17,8 +13,11 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def save_qi(qimva_df, qicc_df, param):
-    #SAVES OUTPUT TO ASCII FILES
-    #====================================
+    '''
+    Save to ASCII file the quality indices. Input from 
+    fac_qi.py
+    '''          
+
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    
     sats = param['sats']
@@ -65,8 +64,10 @@ def save_qi(qimva_df, qicc_df, param):
 
         
 def plot_qi(qorbs_Bnec, qorbs_dB, qorbs_fac, qorbs_dBmva, qimva_df, Bcc_df, qicc_df, param):
-    #generates a standard plot for quality indeces analysis
-    #====================================================== 
+    '''
+    Plot the results from quality indices analysis. Input from 
+    fac_qi.py
+    '''          
     
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    

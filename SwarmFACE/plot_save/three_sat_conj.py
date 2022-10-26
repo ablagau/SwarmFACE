@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 19 18:20:41 2022
-
-@author: blagau
-"""
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdt
 from viresclient import set_token
@@ -16,8 +11,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def save_three_sat_conj(conj_df, param):
-    #SAVES OUTPUT TO ASCII FILES
-    #====================================
+    '''Save the Swarm conjunctions to ASCII file. Input from 
+    find_3sat_conj.py
+    '''
+    
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    
     delT = param['delT']
@@ -49,8 +46,10 @@ def save_three_sat_conj(conj_df, param):
     a_df.to_csv(fname_out, mode='a', sep=",", date_format='%Y-%m-%d %H:%M:%S', header=False) 
     
 def plot_three_sat_conj(conj_df, fac_df, qpar_df, param):
-    #PLOTS THE RESULTS
-    #====================================  
+    '''
+    Generate the standard plot to show the Swarm conjunction. Input from 
+    find_3sat_conj.py
+    '''
     
     dtime_beg = param['dtime_beg']
     dtime_end = param['dtime_end']    

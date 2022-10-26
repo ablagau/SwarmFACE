@@ -94,7 +94,8 @@ def R_in_GEOC(Rsph):
     ------
     R : numpy.array
         satellite position in cartesian GEO frame
-    array of rotation matrices from NEC to GEO
+    : numpy.array
+        array of rotation matrices from NEC to GEO
     '''
 
     latsc = np.deg2rad(Rsph[:,0])
@@ -111,7 +112,28 @@ def R_in_GEOC(Rsph):
     return R, np.stack((north,east,center),axis=-1)
 
 def get_db_data(sats, tbeg, tend, Bmodel, frame = 'GEOC'):
-    """Returns Swarm magnetic perturbation in a DataFrame structure"""
+    '''
+    Return Swarm magnetic perturbation in a DataFrame structure
+    
+    Parameters
+    ----------
+    sats : str or list of str
+        satellites
+    tbeg, tend : datetime-like
+        start and stop times
+    Bmodel : string
+        magnetic field model used to compute the magnetic
+        field perturbations (currently CHAOS)
+    frame : string
+        reference frame for the output, i.e. 'GEOC' for GEO frame 
+        or None for NEC frame
+        
+    Returns
+    -------
+    dB : DataFrame
+        Swarm magnetic field perturbation data 
+    '''
+
     dti = pd.date_range(start = tbeg.round('s'), 
                         end = tend.round('s'), freq='s', closed='left')
     ndti = len(dti)
@@ -151,20 +173,29 @@ def get_db_data(sats, tbeg, tend, Bmodel, frame = 'GEOC'):
     return dB
 
 def GapsAsNaN(df_ini, ind_gaps):
+    '''
+    Given a DataFrame object, replace with NaN the magnetic field data 
+    and model for certain location
+    
+    Parameters
+    ----------
+    df_ini : DataFrame
+        containes columns with magetic field data and model
+    ing_gaps : numpy.array
+        integer-location based indexing
+        
+    Returns
+    -------
+    df_out : DataFrame
+        new object with NaN 
+    : index
+        index values at replaced location    
+    '''
     df_out = df_ini.copy()
     df_out['B_NEC'].iloc[ind_gaps] = [np.full(3,np.nan)]*len(ind_gaps)
     df_out['B_NEC_CHAOS-all'].iloc[ind_gaps] = [np.full(3,np.nan)]*len(ind_gaps)    
     return df_out, df_ini.index[ind_gaps]
 
-def check_Bdata(dat_df, sat_str, ndt):
-    miss_data = 1 if len(dat_df) != ndt else 0
-    ind_gaps = np.where(np.linalg.norm(np.stack(dat_df['B_NEC'].values), \
-                                       axis = 1)==0)[0]
-    if len(ind_gaps):
-        dat_df, tgaps = GapsAsNaN(dat_df, ind_gaps)
-        print('NR. OF BAD DATA POINTS FOR Sw'+sat_str+': ', len(ind_gaps))
-        print(tgaps.values)        
-    return dat_df, miss_data, tgaps
 
 def res_param(res):
     '''
@@ -184,13 +215,44 @@ def res_param(res):
     return sstep, fs
 
 def find_tshift2sat(dti, Rsph, sats):
-    """compute orbital phase lag [in sec.] between two satellites"""
+    '''
+    Compute orbital phase lag [in sec.] between two satellites
+    
+    Parameters
+    ---------
+    dti : Datetimeindex
+        One second separated timestamps
+    Rshp : numpy.array
+        satellites position in spherical GEO frame
+    sats : [str, str]
+        satellite pair, e.g. [‘A’, ‘C’]
+    
+    Returns
+    ------
+    tshift : [float, float]
+        optimal time shift in sec. to aligned the 
+        two sensors side by side 
+        
+    '''
     ndti, nsc = len(dti), len(sats)
-    i1, i2 = 0, np.min([ndti-2, 1300]) 
-    deltat = (dti[i2] - dti[i1]).seconds
-    Rspheci = np.copy(Rsph)
-    Reci = np.full((ndti,nsc,3),np.nan)
-    neci, peci = (np.full((nsc,3),np.nan) for i in range(2))
+    i1, i2 = 0, np.min([ndti-2, 1300])      # indices used to select an orbit 
+                                            # section (smaller that 1/4 orbit)
+    deltat = (dti[i2] - dti[i1]).seconds    # duration of selected orbit section
+    Rspheci = np.copy(Rsph)                 # will containe sats spherical 
+                                            # coordinates in inertial frame
+    Reci = np.full((ndti,nsc,3),np.nan)     # will containe sats cartesian 
+                                            # coordinates in inertial frame
+    # Spherical cordinates in the inertial frame are obtained from spherical
+    # coordinates in GEO by compensating the longitude wit Earth rotation. Then
+    # the cartesian coordinates in the inertial frame are found. The orbits' normals
+    # 'neci' are found as the cross product of satellite positions at the start 
+    # and stop of selected orbit section. The cross-product 'crossorb' of 
+    # orbits' normal provides the direction of orbitat cross-point. Vector 
+    # positions 'peci' of satellites at pseudo-equators (0 deg. latitude when 
+    # considering the cross-point as pole) are computed. The evolution in time 
+    # of the (signed) position angles in the plane peci, crossorb are considered
+    # when computing the time shift
+    neci, peci = (np.full((nsc,3),np.nan) for i in range(2))   # orbit normals and 
     theta, omega, tmean = (np.full(nsc,np.nan) for i in range(3))
     cosrun, sinrun, latrun = (np.full((nsc, i2-i1),np.nan) for i in range(3))
     for sc in range(nsc):
@@ -202,7 +264,7 @@ def find_tshift2sat(dti, Rsph, sats):
     isclow = 0 if ((sats[0] == 'A') or (sats[0] == 'C')) else 1
     avelat = np.mean(Rspheci[i1:i2,isclow,0])
     vtmp = normvec(np.cross(neci[0,:],neci[1,:]))[0]
-    crossorb = vtmp if vtmp[2]*avelat >0 else -vtmp
+    crossorb = vtmp if vtmp[2]*avelat >0 else -vtmp         # cross-orbit unit vector 
     for sc in range(nsc):
         peci[sc,:] =  normvec(np.cross(crossorb, neci[sc,:]))[0]
         for ii in range(i1, i2):
@@ -237,8 +299,32 @@ def split_into_sections(df, begend_arr):
     return secorbs
 
 def find_ao_margins(df, fac_qnt = 'FAC_flt_sup', rez_qd = 100):
-    """For a quarter-orbit section, estimates the times of auroral
-    oval encounter (central point and edges) """
+    '''
+    Estimate the times of auroral oval (AO) encounter (central point 
+    and edges) for a quarte-orbit section. Works with quasi-dipole 
+    latitude QDLat (not time) dependence.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        Swarm data for a quarter-orbit section, including 
+        FAC data 
+    fac_qnt : string
+        name of the column with FAC data to work with
+    rez_qd : 
+        resolution to interpolate the QDLat 
+    Returns
+    -------
+    t64[0], t64[1], t64[2] : datetime-like 
+        AO start, stop, and central time
+    : float, float
+        QDLat and QDLon of AO center
+    qd_trend, qd_sign : float
+        trend and sign of QDLat in the analysed quarte-orbit section
+    ti_arr, qd_arr : numpy.array
+        interpolated times and corresponding QDLat values   
+    '''
+
     qd = df['QDLat'].values
     qdlon = df['QDLon'].values
     jb = df[fac_qnt].values
