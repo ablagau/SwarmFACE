@@ -42,7 +42,8 @@ To import the package write:
 
 There are five high-level functions to estimate the FAC 
 density, one to find Swarm conjunctions above the auroral oval, 
-and two for estimating the FAC quality indices. To run, e.g., the function that estimates the FAC density by the 
+and two for estimating the FAC quality indices. To run, e.g., the 
+function that estimates the FAC density by the 
 single-satellite method, write:
 
     dtime_beg = '2014-05-04T17:48:00'
@@ -54,6 +55,23 @@ For each high-level function, there is an associated
 jupyter notebook that illustrates its application _notebooks_ 
 directory.
 
+
+**Acknowledging or Citing SwarmFACE**
+
+If you use SwarmFACE for scientific work or research presented 
+in a publication, please cite the SwarmFACE paper:
+
+Blagau, A., J. Vogt, (2022), SwarmFACE: a Python Package for 
+Field-Aligned Currents Exploration with Swarm, Front. Astron. 
+Space Sci., under review.
+
+Additionally, consider to add in the methods or acknowledgements 
+section the following: "This research has made use of SwarmFACE v?.?.?, 
+an open-source and free Python package that serves the 
+exploration of field-aligned currents system based on 
+Swarm observation (Zenodo: https://doi.org/...)." 
+
+
 **Copyright**
 
 © 2022 Adrian Blagau and Joachim Vogt. SwarmFACE is an 
@@ -61,13 +79,9 @@ open-access code distributed under the terms of the
 Creative Commons Attribution License (CC BY). 
 The use, distribution or reproduction in other forums is 
 permitted, provided the original author(s) and the copyright 
-owner(s) are credited and that the following publication 
-describing the code is cited, in accordance with accepted 
-academic practice:
-
-Blagau, A., J. Vogt, (2022), SwarmFACE: a Python Package for 
-Field-Aligned Currents Exploration with Swarm, Front. Astron. 
-Space Sci., under review.
+owner(s) are credited and that the publication
+describing the code (see above) is cited, in accordance 
+with accepted academic practice.
 
 The software is provided "as is", without warranty of any kind, 
 express or implied, including but not limited to the warranties 

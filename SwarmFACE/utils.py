@@ -273,7 +273,9 @@ def find_tshift2sat(dti, Rsph, sats):
         latrun[sc,:] = np.arctan2(sinrun[sc,:], cosrun[sc,:])
         tmean[sc] = np.mean(latrun[sc,:] - np.pi/2)/omega[sc]
     tshift = [int(round(tmean[1] - tmean[0],0)), 0]
-    print('Computed time shift array = ', tshift)
+    angsep = np.arccos(np.sum(peci[0,:]*peci[1,:]))*180./np.pi
+    print('Angle between orbital planes [deg] = ', np.round(angsep,3))
+    print('Computed time shift array [2] = ', tshift)
     return tshift
 
 def split_into_sections(df, begend_arr):
