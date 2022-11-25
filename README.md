@@ -56,7 +56,7 @@ jupyter notebook that illustrates its application _notebooks_
 directory.
 
 
-**Acknowledging or Citing SwarmFACE**
+**Acknowledging or citing SwarmFACE**
 
 If you use SwarmFACE for scientific work or research presented 
 in a publication, please cite the SwarmFACE paper:
