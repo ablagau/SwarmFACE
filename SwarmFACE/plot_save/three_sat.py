@@ -136,14 +136,16 @@ def plot_three_sat(j_df, dat_df, param):
     ax[0].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)    
     
     ax[1].plot(dat_df[('dBgeo','B')])
-    ax[1].get_shared_y_axes().join(ax[0], ax[1], ax[2])
+    
     ax[1].set_ylabel('$dB_{GEO}$ swB' +'\n[nT]', linespacing=1.7)
     ax[1].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)   
 
     ax[2].plot(dat_df[('dBgeo','C')])
-    ax[2].get_shared_y_axes().join(ax[0], ax[1], ax[2])
     ax[2].set_ylabel('$dB_{GEO}$ swC' +'\n[nT]', linespacing=1.7)
     ax[2].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)
+    
+    for ii in range(3):
+        ax[ii].sharey(ax[0])
     
     ax[3].plot(j_df['CN3'])
     ax[3].set_ylabel('log(CN3)\n')
@@ -162,13 +164,13 @@ def plot_three_sat(j_df, dat_df, param):
     ax[6].plot(j_df['FAC_er'], label='$\mathrm{J_{ABC \_ er}}$')
     if use_filter:
         ax[6].plot(j_df['FAC_flt_er'], label='$\mathrm{J_{ABC \_ flt \_ er}}$')    
-    ax[6].set_ylabel(r'$J_{FAC\_er}}$'+'\n'+'[$\mu A/m^2$]', linespacing=1.7)
+    ax[6].set_ylabel(r'$J_{FAC\_er}$'+'\n'+'[$\mu A/m^2$]', linespacing=1.7)
     ax[6].set_ylim(bottom = -0.05, top = 1.)
     ax[6].legend(loc = (0.95, 0.1), handlelength=1)
     
     for ii in range(1,nrp -1):
-        ax[ii].get_shared_x_axes().join(ax[0])
-    
+        ax[ii].sharex(ax[0])
+        
     # creates the ephemerides    
     latc = dat_df[('Rsph','C','Lat')].values
     lonc = dat_df[('Rsph','C','Lon')].values

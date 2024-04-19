@@ -143,7 +143,7 @@ def plot_dual_sat_LS(j_df, dat_df, param):
     ax[0].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)    
     
     ax[1].plot(dat_df[('dBgeo',str(sats[1]))])
-    ax[1].get_shared_y_axes().join(ax[0], ax[1])
+    ax[1].sharey(ax[0])
     ax[1].set_ylabel('$dB_{GEO}$ sw' + str(sats[1]) +'\n[nT]', linespacing=1.7)
     ax[1].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)   
 
@@ -166,10 +166,10 @@ def plot_dual_sat_LS(j_df, dat_df, param):
         ax[5].plot(j_df['FAC_flt_er'])
     else:
         ax[5].plot(j_df['FAC_er'])   
-    ax[5].set_ylabel(r'$J_{FAC\_er}}$'+'\n'+'[$\mu A/m^2$]', linespacing=1.7)
+    ax[5].set_ylabel(r'$J_{FAC\_er}$'+'\n'+'[$\mu A/m^2$]', linespacing=1.7)
     
     for ii in range(1,nrp -1):
-        ax[ii].get_shared_x_axes().join(ax[0])
+        ax[ii].sharex(ax[0])
     
     # creates the ephemerides    
     latc = dat_df[('Rsph',str(sats[1]),'Lat')].values
@@ -271,6 +271,7 @@ def plot_dual_sat_LS(j_df, dat_df, param):
     handles, labels = ax_conf[2].get_legend_handles_labels()
     ax_conf[2].legend(handles[0:2],['sw'+sats[0],'sw'+sats[1]], loc = (0.98, 0.7),\
                       labelcolor=icolor, handlelength=1, ncol = 1)
-                                    
+
     plt.draw()
-    fig.savefig(fname_fig)    
+    fig.savefig(fname_fig)  
+    

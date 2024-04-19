@@ -162,7 +162,7 @@ def plot_single_sat(j_df, dat_df, param):
 #    ax[6].legend() 
 
     for ii in range(1,nrp -1):
-        ax[ii].get_shared_x_axes().join(ax[0])
+        ax[ii].sharex(ax[0])
 
     if tincl is not None:
         for ii in range(nrp):

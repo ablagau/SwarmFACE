@@ -395,7 +395,7 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
         Jb_flt= Jn_flt/cosBN    
         Jb_flt_er = Jb_er/2.5  # this is an empirical factor
         Jn_flt_er = Jn_er/2.5    
-        bad_flt_err = np.where(Jb_flt_er > errTHR) 
+        bad_flt_err = np.where(Jn_flt_er > errTHR) 
         Jb_flt[bad_ang] = np.nan     
         Jb_flt[bad_flt_err], Jn_flt[bad_flt_err]  = (np.nan for i in range(2))
         
@@ -734,7 +734,7 @@ def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
         Jb_flt= Jn_flt/cosBN    
         Jb_flt_er = Jb_er/2.5  # this is an empirical factor
         Jn_flt_er = Jn_er/2.5    
-        bad_flt_err = np.where(Jb_flt_er > errTHR) 
+        bad_flt_err = np.where(Jn_flt_er > errTHR) 
         Jb_flt[bad_ang] = np.nan     
         Jb_flt[bad_flt_err], Jn_flt[bad_flt_err]  = (np.nan for i in range(2))
     # stores the output in a DataFrame 

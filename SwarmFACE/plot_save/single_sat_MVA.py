@@ -165,7 +165,7 @@ def plot_mva1sat(j_df, dat_df, jcorr_df, dBmva_df, mva_df, param):
     ax[3].set_ylabel(r'$ang_NV$'+'\n'+r'$[deg]$', linespacing=1.7)    
     
     for ii in range(1,nrp -1):
-        ax[ii].get_shared_x_axes().join(ax[0])
+        ax[ii].sharex(ax[0])
         
     ax[4] =  fig.add_axes([xle, 0.03, xri-xle, 0.30])
     ax[4].set_title('Hodogram of '+r'$dB_{minvar}$'+ ' vs. '+\

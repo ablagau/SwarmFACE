@@ -103,8 +103,8 @@ def plot_three_sat_conj(conj_df, fac_df, qpar_df, param):
             ax[ii].set_xlim(timesB[kk] - marg, timesB[kk] + marg)
             ax[ii].set_xticklabels([])  
         
-        for ii in range(6,9): 
-            ax[ii].get_shared_x_axes().join(ax[6], ax[7], ax[8])
+        for ii in range(7,9): 
+            ax[ii].sharex(ax[6])
 
         #gets the QDLat trend, sign, maximum value, and value at central FAC  
         qd_trends, qd_signs, qd_maxs, qd_aocs = (np.zeros(nsc) for i in range(4))
@@ -200,7 +200,7 @@ def plot_three_sat_conj(conj_df, fac_df, qpar_df, param):
             ax[sc + 6].set_xlim(qd_range)
             if sc in range(2):
                 ax[sc + 6].set_xticklabels([])
-                ax[sc + 6].get_shared_y_axes().join(ax[6], ax[7], ax[8])       
+                ax[sc + 6].sharey(ax[6])
             plt.figtext(0.01, ylo[8]-0.008, 'QDLat', va='top')
 
         plt.draw()

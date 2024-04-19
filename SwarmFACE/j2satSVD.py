@@ -61,7 +61,7 @@ def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
     '''
 
     Bmodel="CHAOS-all='CHAOS-Core'+'CHAOS-Static'+'CHAOS-MMA-Primary'+'CHAOS-MMA-Secondary'"    
-    dti = pd.date_range(start = dtime_beg, end = dtime_end, freq='s', closed='left')
+    dti = pd.date_range(start = dtime_beg, end = dtime_end, freq='s', inclusive='left')
     ndti = len(dti)
     nsc = len(sats)
     timebads={'sc0':None,'sc1':None}

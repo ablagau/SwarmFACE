@@ -101,8 +101,7 @@ def get_data_mva1sat(dtime_beg, dtime_end, sat, use_filter=True):
     ax2.set_ylabel(r'$J_{FAC}$', linespacing=1.3)    
     ax2.xaxis.set_major_formatter(mdt.DateFormatter('%H:%M:%S'))    
     span = SpanSelector(ax1, onselect, 'horizontal', useblit=True, interactive=True,
-                span_stays=True, rectprops=dict(alpha=0.2, facecolor='red'))
-    fig.show()
+                props=dict(alpha=0.2, facecolor='red'))
     
     param = {'dtime_beg':dtime_beg,'dtime_end':dtime_end,'sat': sat, \
              'tmarg':tmarg,'use_filter':use_filter, 'Bmodel':Bmodel, \

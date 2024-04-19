@@ -165,7 +165,7 @@ def plot_qi(qorbs_Bnec, qorbs_dB, qorbs_fac, qorbs_dBmva, qimva_df, Bcc_df, qicc
         ax[1].plot(qorbs_dB[indC][jj]['dBnec'])
         ax[1].legend(['dB_N', 'dB_E', 'dB_C' ], loc = (0.95, 0.1), handlelength=1)
         ax[1].set_ylabel('$dB_{NEC}$ sw'+sats[indC]+'\n[nT]', linespacing=1.7)
-        ax[1].get_shared_y_axes().join(ax[0], ax[1])
+        ax[1].sharex(ax[0])
         ax[1].axvline(qimva_df[indC]['TbegMVA'][jj], ls=':', c='k', lw=0.7)
         ax[1].axvline(qimva_df[indC]['TendMVA'][jj], ls=':', c='k', lw=0.7)
 
@@ -176,8 +176,8 @@ def plot_qi(qorbs_Bnec, qorbs_dB, qorbs_fac, qorbs_dBmva, qimva_df, Bcc_df, qicc
         ax[3].plot(qorbs_dBmva[indC][jj][['dB_max','dB_min','dB_B']])
         ax[3].legend(['dB_max', 'dB_min', 'dB_B' ], loc = (0.95, 0.1), handlelength=1)
         ax[3].set_ylabel('$dB_{MVA}$ sw'+sats[indC]+'\n[nT]', linespacing=1.7)
-        ax[3].get_shared_y_axes().join(ax[2], ax[3])
-
+        ax[3].sharex(ax[2])
+        
         ax[4].plot(tsec, dBsec)
 #        qorbs_ref_cc[jj].plot(ax=ax[4])
         ax[4].plot(Bcc_df[jj])

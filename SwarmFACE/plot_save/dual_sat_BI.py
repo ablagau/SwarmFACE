@@ -142,7 +142,7 @@ def plot_dual_sat_BI(j_df, dat_df, param):
     ax[0].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)    
     
     ax[1].plot(dat_df[('dBgeo',str(sats[1]))])
-    ax[1].get_shared_y_axes().join(ax[0], ax[1])
+    ax[1].sharey(ax[0])
     ax[1].set_ylabel('$dB_{GEO}$ sw' + str(sats[1]) +'\n[nT]', linespacing=1.7)
     ax[1].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)   
 
@@ -165,7 +165,7 @@ def plot_dual_sat_BI(j_df, dat_df, param):
     ax[4].set_ylabel('errJ\n[$\mu A/m^2$]', linespacing=1.7)   
 
     for ii in range(1,nrp -1):
-        ax[ii].get_shared_x_axes().join(ax[0])
+        ax[ii].sharex(ax[0])
     
     # creates the ephemerides    
     latc = dat_df[('Rsph',str(sats[1]),'Lat')].values

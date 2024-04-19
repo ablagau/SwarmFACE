@@ -61,7 +61,7 @@ def find_3sat_conj(dtime_beg, dtime_end, delT = 120, delN=300, delE=1200,
         large_beg, large_end = request.get_times_for_orbits(orb1, orb2, 
                                          mission='Swarm', spacecraft=sats[sc])
         tlarges.append([large_beg, large_end])
-        dti = pd.date_range(start= large_beg, end= large_end, freq='s', closed='left')
+        dti = pd.date_range(start= large_beg, end= large_end, freq='s', inclusive='left')
         # get L2 FAC data for Northern hemisphere
         request.set_collection('SW_OPER_FAC'+sats[sc]+'TMS_2F')
         request.set_products(measurements=["FAC"], 
@@ -156,7 +156,8 @@ def find_3sat_conj(dtime_beg, dtime_end, delT = 120, delN=300, delE=1200,
                                 round(qdlonB[indB],2), round(qdlonC[indC],2),
                                 orbitA[indA], orbitB[indB], orbitC[indC], 
                                 timesA[indA], timesC[indC]]],columns=col_names) 
-                          conj_df= conj_df.append(conj_i, ignore_index = True)
+                          conj_df = pd.concat([conj_df, conj_i], ignore_index=True)
+
 
     param = {'dtime_beg':dtime_beg,'dtime_end':dtime_end,
              'delT': delT, 'delN': delN, 'delE': delE}

@@ -111,6 +111,29 @@ def R_in_GEOC(Rsph):
     R = -radsc[...,None]*center
     return R, np.stack((north,east,center),axis=-1)
 
+def cart2sph(Rcart):
+    '''
+    Convert from cartesian to spherical coordinates
+
+    Parameters
+    ---------
+    Rcart : numpy.array
+        satellite position in cartesian coordinates
+
+    Return
+    ------
+    R : numpy.array
+        satellite position in spherical coordinates
+        [latitude, longitude, radius]
+    '''
+
+    Rt = np.linalg.norm(Rcart, axis = -1)
+    Rxy = np.linalg.norm(Rcart[:,0:2], axis = -1)
+    lat = np.rad2deg(np.arctan2(Rcart[:,2], Rxy))
+    lon = np.rad2deg(np.arctan2(Rcart[:, 1], Rcart[:, 0]))
+    return np.stack((lat,lon,Rt),axis=-1)
+
+
 def get_db_data(sats, tbeg, tend, Bmodel, frame = 'GEOC'):
     '''
     Return Swarm magnetic perturbation in a DataFrame structure
@@ -135,7 +158,7 @@ def get_db_data(sats, tbeg, tend, Bmodel, frame = 'GEOC'):
     '''
 
     dti = pd.date_range(start = tbeg.round('s'), 
-                        end = tend.round('s'), freq='s', closed='left')
+                        end = tend.round('s'), freq='s', inclusive='left')
     ndti = len(dti)
     nsc = len(sats)
     Rsph, R, Bnec, Bgeo, Bmod, dBnec, dBgeo = (np.full((ndti,nsc,3),np.nan) for i in range(7))

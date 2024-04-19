@@ -73,7 +73,6 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
         large_beg, large_end = request.get_times_for_orbits(orb1, orb2, 
                                          mission='Swarm', spacecraft=sats[sc])
         tlarges.append([large_beg, large_end])
-        dti = pd.date_range(start= large_beg, end= large_end, freq='s', closed='left')
         # get get B NEC data for Northern hemisphere
         request.set_collection("SW_OPER_MAG"+sats[sc]+"_LR_1B")    
         request.set_products(measurements=["B_NEC"], auxiliaries=['QDLat','QDLon','MLT'],
