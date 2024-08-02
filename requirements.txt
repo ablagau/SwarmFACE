@@ -4,3 +4,4 @@ numpy==1.26.4
 pandas==2.1.4
 scipy==1.11.4
 viresclient==0.11.6
+sphinx_rtd_theme==2.0.0
