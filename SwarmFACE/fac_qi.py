@@ -145,9 +145,10 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
             # transforms vectors in Gepgraphyc cartesian
             R, MATnec2geo = R_in_GEOC(Rsph)   
             B = np.matmul(MATnec2geo,Bnec[...,None]).reshape(Bnec.shape)
+            refB = np.matmul(MATnec2geo,Bmod[...,None]).reshape(Bmod.shape)
             dB = np.matmul(MATnec2geo,dBnec[...,None]).reshape(dBnec.shape)   
             # compute the FAC current and stores data in DataFrames
-            j_df = singleJfac(ti, R, B, dB, use_filter = True)              
+            j_df = singleJfac(ti, R, refB, dB, use_filter = True)              
             j_df['FAC_flt_sup'] = np.where(np.abs(j_df['FAC_flt']) >= jTHR, j_df['FAC_flt'], 0)
             j_df['QDLat'] = np.interp(j_df.index.asi8, ti.asi8, dat_df['QDLat'].values)
             j_df['QDLon'] = np.interp(j_df.index.asi8, ti.asi8, dat_df['QDLon'].values)
@@ -333,7 +334,7 @@ def qorbsCC(sats, qimva_df, qorbs_dBmva):
             # quarter orbit timeline and data for the second and reference s/c
             tsec, tref = qorbs_dBmva[isec][jj].index, qorbs_dBmva[iref][jj].index
             dBsec = qorbs_dBmva[isec][jj]['dB_max'].values 
-            dBref = qorbs_dBmva[iref][jj]['dB_max'].values
+            # dBref = qorbs_dBmva[iref][jj]['dB_max'].values
             # index range and data of MVA interval for reference s/c
             imva = np.where((tref >= qimva_df[iref]['TbegMVA'].iloc[jj]) & 
                             (tref <= qimva_df[iref]['TendMVA'].iloc[jj]))             

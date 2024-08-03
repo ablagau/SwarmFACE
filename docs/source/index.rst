@@ -1,5 +1,5 @@
 .. SwarmFACE documentation master file, created by
-   sphinx-quickstart on Sat Oct 15 14:25:07 2022.
+   sphinx-quickstart on Fri Aug  2 15:31:08 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 

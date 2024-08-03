@@ -9,7 +9,7 @@ from .utils import *
 
 muo = 4*np.pi*1e-7
     
-def singleJfac(t, R, B, dB, alpha= None, N2d= None, N3d= None, tincl= None, 
+def singleJfac(t, R, refB, dB, alpha= None, N2d= None, N3d= None, tincl= None, 
                res = 'LR', er_db= 0.5, angTHR= 30., use_filter= True):
     '''
     Estimate the FAC density with single-satellite method
@@ -20,8 +20,8 @@ def singleJfac(t, R, B, dB, alpha= None, N2d= None, N3d= None, tincl= None,
         time stamps
     R : numpy.array
         satellite vector position in GEO frame
-    B : numpy.array
-        magnetic field vector in GEO frame
+    refB : numpy.array
+        reference magnetic field vector in GEO frame
     dB : numpy.array
         magnetic perturbation vector in GEO frame
     alpha : float
@@ -51,7 +51,7 @@ def singleJfac(t, R, B, dB, alpha= None, N2d= None, N3d= None, tincl= None,
     # Constructs the differences & values at mid-intervals
     dt = t[1:].values - t[:-1].values
     tmid = t[:-1].values + dt*0.5
-    Bmid = 0.5*(B[1:,:] + B[:-1,:])           
+    Bmid = 0.5*(refB[1:,:] + refB[:-1,:])           
     Rmid = 0.5*(R[1:,:] + R[:-1,:])
     diff_dB = dB[1:,:] - dB[:-1,:]   
     V3d = R[1:,:] - R[:-1,:]
@@ -167,7 +167,8 @@ def recivec3s(R):
     Rtens = np.sum(np.matmul(Rmeso[:,:,:,None],Rmeso[:,:,None, :]), axis = -3)
     return Rc, Rmeso, nuvec, Q3S, Qtens, Rtens
 
-def threeJfac(dt, R, B, dB, er_db= 0.5, angTHR= 30., use_filter= True):
+
+def threeJfac(dt, R, refB, dB, er_db= 0.5, angTHR= 30., use_filter= True):
     '''
     Estimate the FAC density with three-satellite method
 
@@ -177,8 +178,8 @@ def threeJfac(dt, R, B, dB, er_db= 0.5, angTHR= 30., use_filter= True):
         time stamps
     R : numpy.array
         satellites vector position in GEO frame
-    B : numpy.array
-        magnetic field vector in GEO frame
+    refB : numpy.array
+        reference magnetic field vector in GEO frame
     dB : numpy.array
         magnetic perturbation vector in GEO frame
     er_db : float
@@ -206,7 +207,7 @@ def threeJfac(dt, R, B, dB, er_db= 0.5, angTHR= 30., use_filter= True):
     # computes the direction of (un-subtracted) local magnetic field Bunit and #
     # the orientation of spacecraft plane with respect to Bunit (cosBN and angBN). 
     # Stores times when B is too close to the spacecraft plane, set by angTHR.    
-    Bunit = B.mean(axis=-2)/np.linalg.norm(B.mean(axis=-2),axis=-1)[...,None]
+    Bunit = refB.mean(axis=-2)/np.linalg.norm(refB.mean(axis=-2),axis=-1)[...,None]
     cosBN = np.matmul(Bunit[...,None,:],nuvec[...,:,None]).reshape(dt.shape)
     angBN = np.arccos(cosBN)*180./np.pi 
     bad_ang = np.where((np.abs(angBN) < 90+angTHR) & (np.abs(angBN) > 90-angTHR))    
@@ -251,6 +252,7 @@ def threeJfac(dt, R, B, dB, er_db= 0.5, angTHR= 30., use_filter= True):
                          'CN3'], index=dt)    
     return j_df
     
+
 def recivec2s(R4s):
     '''
     Compute the reciprocal vectors of a four-point planar configuration
@@ -305,7 +307,8 @@ def recivec2s(R4s):
     traceq = np.sum(np.square(np.linalg.norm(Q4s, axis = -1)), axis=-1)
     return Q4s, Rc, nuvec, condnum, nonplan, tracer, traceq
 
-def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30., 
+
+def ls_dualJfac(dt, R, refB, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
                 errTHR=0.1, use_filter= True, saveconf=False):
     '''
     Estimate the FAC density with dual-satellite Least-Squares method
@@ -316,8 +319,8 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
         time stamps
     R : numpy.array
         satellites vector position in GEO frame
-    B : numpy.array
-        magnetic field vector in GEO frame
+    refB : numpy.array
+        reference magnetic field vector in GEO frame
     dB : numpy.array
         magnetic perturbation vector in GEO frame
     dt_along : integer
@@ -344,9 +347,9 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     ndt4 = ndt - dt_along    
     dt4 = dt[:ndt4].shift(1000.*(dt_along/2),freq='ms')   # new data timeline
 
-    # constructs of the quad
+    # constructs the quad swAtrail, swCtrail, swAlead, swClead as 0, 1, 2, 3
     R4s, B4s, dB4s = (np.full((ndt4,4,3),np.nan) for i in range(3))
-    for arr4s, arr in zip([R4s, B4s, dB4s], [R,B,dB]):
+    for arr4s, arr in zip([R4s, B4s, dB4s], [R,refB,dB]):
         arr4s[:,0:2, :] = arr[:ndt4, :, :]
         arr4s[:,2:, :] = arr[dt_along:, :, :]
     
@@ -356,13 +359,13 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     Q4s, Rc, nuvec, cnum, nonplan, tracer, traceq = recivec2s(R4s)
     CN2 = np.log10(cnum)  # log of condition number  
     
-    # computes the direction of (un-subtracted) local magnetic field Bunit and #
+    # computes the direction of (un-subtracted) local magnetic field Bunit and 
     # the orientation of spacecraft plane with respect to Bunit (cosBN and angBN). 
     # Stores times when B is too close to the spacecraft plane, set by angTHR.    
     Bunit = B4s.mean(axis=-2)/np.linalg.norm(B4s.mean(axis=-2),axis=-1)[...,None]
     cosBN = np.matmul(Bunit[...,None,:],nuvec[...,:,None]).reshape(dt4.shape)
     angBN = np.arccos(cosBN)*180./np.pi 
-    bad_ang = np.where((np.abs(angBN) < 90+angTHR) & (np.abs(angBN) > 90-angTHR))    
+    bad_ang = np.where((np.abs(angBN) < 90+angTHR) & (np.abs(angBN) > 90-angTHR))
 
     # Estimates the curl of B, Jn, and Jb i.e. current along normal and along B    
     CurlB = np.sum( np.cross(Q4s,dB4s,axis=-1), axis=-2)
@@ -374,7 +377,7 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     Jn_er = 1e-6*er_db/muo*np.sqrt(traceq)
     Jb_er = Jn_er/np.absolute(cosBN)    
     bad_err = np.where(Jn_er > errTHR)    
-    Jb[bad_ang] = np.nan   
+    Jb[bad_ang], Jb_er[bad_ang] = (np.nan for i in range(2))   
     Jb[bad_err], Jn[bad_err]  = (np.nan for i in range(2))
 
     # filtering part   
@@ -396,11 +399,20 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
         Jb_flt_er = Jb_er/2.5  # this is an empirical factor
         Jn_flt_er = Jn_er/2.5    
         bad_flt_err = np.where(Jn_flt_er > errTHR) 
-        Jb_flt[bad_ang] = np.nan     
+        Jb_flt[bad_ang], Jb_flt_er[bad_ang] = (np.nan for i in range(2))    
         Jb_flt[bad_flt_err], Jn_flt[bad_flt_err]  = (np.nan for i in range(2))
         
-    # stores the output in a DataFrame 
-    j_df = pd.DataFrame(np.stack((Rc[:,0], Rc[:,1], Rc[:,2], Jb, Jn, Jb_er, 
+    Rc_sph = cart2sph(Rc)
+    # correct the latitude due to (inverse) Earth rotation
+    dtime = (dt4 - dt[0])/np.timedelta64(1, 'ns')/1.e9
+    Rc_sphe = Rc_sph.copy()
+    Rc_sphe[:,1] = ((Rc_sph[:,1] + 180 - dtime/86164.099 * 360)%360)-180       
+
+    Rce = Rc.copy()
+    Rce, _ = R_in_GEOC(Rc_sphe)
+    Rce = Rce*1.e3
+    # stores the output in a DataFrame     
+    j_df = pd.DataFrame(np.stack((Rce[:,0], Rce[:,1], Rce[:,2], Jb, Jn, Jb_er, 
                                   Jn_er, Jb_flt, Jn_flt, Jb_flt_er, Jn_flt_er, 
                                   angBN, CN2)).transpose(),
                 columns=['Rmid_x','Rmid_y','Rmid_z','FAC','Jn','FAC_er','Jn_er',
@@ -413,6 +425,7 @@ def ls_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     
     return j_df
     
+
 def ffunct(tau3d,tauast=0.13,taunul=0.07,intpol='Linear'):
     '''
     Compute coefficients for a smooth transition between 1D and 2D
@@ -453,6 +466,7 @@ def ffunct(tau3d,tauast=0.13,taunul=0.07,intpol='Linear'):
         print('*** ffunct: Non-supported value of intpol ***')
         f = -1
     return f
+
 
 def qmatrix_intpol(R,tauast=0.13, taunul=0.07, intpol='Linear'):
     '''
@@ -497,7 +511,8 @@ def qmatrix_intpol(R,tauast=0.13, taunul=0.07, intpol='Linear'):
     AD = ff.sum(axis=-1)
     return Q,AD,Vt,S     
 
-def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
+
+def svd_dualJfac(dt, R, refB, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
                  intpol='Linear', angTHR=30., use_filter=True, saveconf=False):
     '''
     Estimate the FAC density with dual-satellite Singular
@@ -509,8 +524,8 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
         time stamps
     R : numpy.array
         satellites vector position in GEO frame
-    B : numpy.array
-        magnetic field vector in GEO frame
+    refB : numpy.array
+        reference magnetic field vector in GEO frame
     dB : numpy.array
         magnetic perturbation vector in GEO frame
     dt_along : integer
@@ -544,9 +559,9 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
     ndt4 = ndt - dt_along    
     dt4 = dt[:ndt4].shift(1000.*(dt_along/2),freq='ms')   # new data timeline
 
-    # constructs of the quad
+    # constructs the quad swAtrail, swCtrail, swAlead, swClead as 0, 1, 2, 3
     R4s, B4s, dB4s = (np.full((ndt4,4,3),np.nan) for i in range(3))
-    for arr4s, arr in zip([R4s, B4s, dB4s], [R,B,dB]):
+    for arr4s, arr in zip([R4s, B4s, dB4s], [R,refB,dB]):
         arr4s[:,0:2, :] = arr[:ndt4, :, :]
         arr4s[:,2:, :] = arr[dt_along:, :, :]
 
@@ -565,7 +580,7 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
     Nunit[iposa,:] = Runit[iposa,:]
     # computes the direction of (un-subtracted) local magnetic field Bunit and 
     # the orientation of spacecraft plane with respect to Bunit (cosBN and angBN). 
-    # Stores times when B is too close to the spacecraft plane, set by angTHR.       
+    # Stores times when B is too close to the spacecraft plane, set by angTHR. 
     Bunit = B4s.mean(axis=-2)/np.linalg.norm(B4s.mean(axis=-2),axis=-1)[...,None]
     cosBN = np.matmul(Bunit[...,None,:],Nunit[...,:,None]).reshape(dt4.shape)
     angBN = np.arccos(cosBN)*180./np.pi
@@ -575,13 +590,13 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
     CurlB = np.sum( np.cross(Q,dB4s,axis=-1), axis=-2 )    
     CurlBn = np.matmul(CurlB[...,None,:],Nunit[...,:,None]).reshape(dt4.shape) 
     Jn= (1e-6/muo)*CurlBn
-    Jb= Jn/cosBN     
-
+    Jb= Jn/cosBN
+    
+    # Estimates the errors in Jn
     Jn_er = (1e-6/muo)*er_db*np.linalg.norm(Q,axis=(-2,-1))   
     Jb_er = Jn_er/np.absolute(cosBN)
   
-    Jb[bad_ang] = np.nan  
-    Jb_er[bad_ang] = np.nan     
+    Jb[bad_ang], Jb_er[bad_ang] = (np.nan for i in range(2))   
     
     # filtering part   
     dB_flt = np.full((ndt,2,3),np.nan)
@@ -599,23 +614,34 @@ def svd_dualJfac(dt, R, B, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
         CurlBn_flt = np.matmul(CurlB_flt[...,None,:],Nunit[...,:,None]).reshape(dt4.shape)         
         Jn_flt= (1e-6/muo)*CurlBn_flt
         Jb_flt= Jn_flt/cosBN    
-        Jb_flt[bad_ang] = np.nan
         Jb_flt_er = Jb_er/2.5  # this is an empirical factor
         Jn_flt_er = Jn_er/2.5    
-            
+        Jb_flt[bad_ang], Jb_flt_er[bad_ang] = (np.nan for i in range(2))
+        
+    Rc_sph = cart2sph(Rc)
+    # correct the latitude due to (inverse) Earth rotation
+    dtime = (dt4 - dt[0])/np.timedelta64(1, 'ns')/1.e9
+    Rc_sphe = Rc_sph.copy()
+    Rc_sphe[:,1] = ((Rc_sph[:,1] + 180 - dtime/86164.099 * 360)%360)-180       
+      
+    Rce = Rc.copy()
+    Rce, _ = R_in_GEOC(Rc_sphe)
+    Rce = Rce*1.e3 
     # stores the output in a DataFrame 
-    j_df = pd.DataFrame(np.stack((Rc[:,0], Rc[:,1], Rc[:,2], Jb, Jn, Jb_er, 
+    j_df = pd.DataFrame(np.stack((Rce[:,0], Rce[:,1], Rce[:,2], Jb, Jn, Jb_er, 
                                   Jn_er, Jb_flt, Jn_flt, Jb_flt_er, Jn_flt_er, 
                                   angBN, AD, tau)).transpose(),
                 columns=['Rmid_x','Rmid_y','Rmid_z','FAC','Jn','FAC_er','Jn_er',
                          'FAC_flt','Jn_flt','FAC_flt_er','Jn_flt_er', 'angBN', 
                          'AD','tau'], index=dt4)  
+
     if saveconf == True:
         # orders the quad's vertices and computes its parameters 
         EL, EM, el, em  = SortVertices(R4s, dB4s)[7:]        
         j_df = j_df.assign(EL=EL, EM=EM, el=el, em=em)    
-        
+ 
     return j_df
+
 
 def calcBI(R4, dB4):
     '''
@@ -648,7 +674,8 @@ def calcBI(R4, dB4):
             np.sum((dB4[:,0,:] + dB4[:,3,:])*r03, axis = -1) 
     return 0.5*(int_along + int_cross)/area
 
-def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30., 
+
+def bi_dualJfac(dt, R, refB, dB, dt_along= 5, er_db= 0.5, angTHR= 30., 
                 errTHR=0.1, use_filter= True, saveconf= False):
     '''
     Estimate the FAC density with dual-satellite Boundary
@@ -660,10 +687,10 @@ def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
         time stamps
     R : numpy.array
         satellites vector position in GEO frame
-    B : numpy.array
+    refB : numpy.array
         magnetic field vector in GEO frame
     dB : numpy.array
-        magnetic perturbation vector in GEO frame
+        reference magnetic perturbation vector in GEO frame
     dt_along : integer
         along track separation in sec.
     er_db : float
@@ -687,34 +714,38 @@ def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     ndt = len(dt)
     ndt4 = ndt - dt_along    
     dt4 = dt[:ndt4].shift(1000.*(dt_along/2),freq='ms')   # new data timeline
-    # constructs the quad
+    # constructs the quad swAtrail, swCtrail, swAlead, swClead as 0, 1, 2, 3
     R4s, B4s, dB4s = (np.full((ndt4,4,3),np.nan) for i in range(3))
-    for arr4s, arr in zip([R4s, B4s, dB4s], [R,B,dB]):
+    for arr4s, arr in zip([R4s, B4s, dB4s], [R,refB,dB]):
         arr4s[:,0:2, :] = arr[:ndt4, :, :]
         arr4s[:,2:, :] = arr[dt_along:, :, :]
+    
     # orders the quad's vertices and computes the trace of BI reciprocal tensors 
     # The new 0,1,2,and 3 vertices are situated in quadrants Q3, Q4, Q1, and Q2
     # of the local proper reference    
     R4sa, dB4sa, trBI, Rc, nuvec, satsort, trLS, EL, EM, el, em  = \
                                                     SortVertices(R4s, dB4s)
+    
     # computes the direction of (un-subtracted) local magnetic field Bunit and 
     # the orientation of spacecraft plane with respect to Bunit (cosBN and angBN). 
     # Stores times when B is too close to the spacecraft plane, set by angTHR.    
     Bunit = B4s.mean(axis=-2)/np.linalg.norm(B4s.mean(axis=-2),axis=-1)[...,None]
     cosBN = np.matmul(Bunit[...,None,:],nuvec[...,:,None]).reshape(dt4.shape)
     angBN = np.arccos(cosBN)*180./np.pi 
-    bad_ang = np.where((np.abs(angBN) < 90+angTHR) & (np.abs(angBN) > 90-angTHR))     
+    bad_ang = np.where((np.abs(angBN) < 90+angTHR) & (np.abs(angBN) > 90-angTHR))
+    
     # Estimates the curl of B, Jn, and Jb i.e. current along normal and along B  
     CurlBn = calcBI(R4sa, dB4sa)  
     Jn= (1e-6/muo)*CurlBn
     Jb= Jn/cosBN    
+    
     # Estimates the errors in Jn
     Jn_er = 1e-6*er_db/muo*np.sqrt(trBI)
-    Jb_er = Jn_er/np.absolute(cosBN)  
-
-    bad_err = np.where(Jn_er > errTHR)    
-    Jb[bad_ang] = np.nan   
+    Jb_er = Jn_er/np.absolute(cosBN)
+    bad_err = np.where(Jn_er > errTHR)
+    Jb[bad_ang], Jb_er[bad_ang] = (np.nan for i in range(2))
     Jb[bad_err], Jn[bad_err]  = (np.nan for i in range(2))
+
     # filtering part   
     dB_flt = np.full((ndt,2,3),np.nan)
     dB4s_flt, dB4sa_flt = (np.full((ndt4,4,3),np.nan) for i in range(2))
@@ -735,10 +766,21 @@ def bi_dualJfac(dt, R, B, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
         Jb_flt_er = Jb_er/2.5  # this is an empirical factor
         Jn_flt_er = Jn_er/2.5    
         bad_flt_err = np.where(Jn_flt_er > errTHR) 
-        Jb_flt[bad_ang] = np.nan     
-        Jb_flt[bad_flt_err], Jn_flt[bad_flt_err]  = (np.nan for i in range(2))
+        Jb_flt[bad_ang], Jb_flt_er[bad_ang] = (np.nan for i in range(2))    
+        Jb_flt[bad_flt_err], Jn_flt[bad_flt_err]  = (np.nan for i in range(2))        
+
+    Rc_sph = cart2sph(Rc)
+    # correct the latitude due to (inverse) Earth rotation
+    dtime = (dt4 - dt[0])/np.timedelta64(1, 'ns')/1.e9
+    Rc_sphe = Rc_sph.copy()
+    Rc_sphe[:,1] = ((Rc_sph[:,1] + 180 - dtime/86164.099 * 360)%360)-180       
+
+    Rce = Rc.copy()
+    Rce, _ = R_in_GEOC(Rc_sphe)
+    Rce = Rce*1.e3
+
     # stores the output in a DataFrame 
-    j_df = pd.DataFrame(np.stack((Rc[:,0], Rc[:,1], Rc[:,2], Jb, Jn, Jb_er, 
+    j_df = pd.DataFrame(np.stack((Rce[:,0], Rce[:,1], Rce[:,2], Jb, Jn, Jb_er, 
                                   Jn_er, Jb_flt, Jn_flt, Jb_flt_er, Jn_flt_er, 
                                   angBN)).transpose(),
                 columns=['Rmid_x','Rmid_y','Rmid_z','FAC','Jn','FAC_er','Jn_er',

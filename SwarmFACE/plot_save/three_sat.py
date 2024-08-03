@@ -166,7 +166,7 @@ def plot_three_sat(j_df, dat_df, param):
         ax[6].plot(j_df['FAC_flt_er'], label='$\mathrm{J_{ABC \_ flt \_ er}}$')    
     ax[6].set_ylabel(r'$J_{FAC\_er}$'+'\n'+'[$\mu A/m^2$]', linespacing=1.7)
     ax[6].set_ylim(bottom = -0.05, top = 1.)
-    ax[6].legend(loc = (0.95, 0.1), handlelength=1)
+    ax[6].legend(loc = (0.93, 0.1), handlelength=1)
     
     for ii in range(1,nrp -1):
         ax[ii].sharex(ax[0])
@@ -237,8 +237,6 @@ def plot_three_sat(j_df, dat_df, param):
         Vi_nec[ii, :, :] = np.matmul(trmat_i, Vi_geo_unit[...,None]).reshape(Vi_geo.shape)
         
     # computes the (common) range along N and E
-    dn_span = max(nlim_nec[:,0] - nlim_nec[:,1])
-    de_span = max(elim_nec[:,0] - elim_nec[:,1])
     d_span = max(np.concatenate((nlim_nec[:,0] - nlim_nec[:,1], 
                                  elim_nec[:,0] - elim_nec[:,1])))*1.2
     

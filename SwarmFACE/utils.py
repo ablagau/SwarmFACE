@@ -133,6 +133,29 @@ def cart2sph(Rcart):
     lon = np.rad2deg(np.arctan2(Rcart[:, 1], Rcart[:, 0]))
     return np.stack((lat,lon,Rt),axis=-1)
 
+def sph2cart(Rsph):
+    '''
+    Convert from spherical to cartesian coordinates
+
+    Parameters
+    ---------
+    Rsph : numpy.array
+        satellite position in spherical coordinates
+        [latitude, longitude, radius]
+
+    Return
+    ------
+    R : numpy.array
+        satellite position in cartesian coordinates
+    '''
+    
+    rcos_theta = Rsph[:,2] * np.cos(np.deg2rad(Rsph[:,0]))
+    x = rcos_theta * np.cos(np.deg2rad(Rsph[:,1]))
+    y = rcos_theta * np.sin(np.deg2rad(Rsph[:,1]))
+    z = Rsph[:,2] * np.sin(np.deg2rad(Rsph[:,0]))
+    return np.stack((x, y, z),axis=-1)
+    
+
 
 def get_db_data(sats, tbeg, tend, Bmodel, frame = 'GEOC'):
     '''
@@ -237,16 +260,15 @@ def res_param(res):
     fs = 1 if res=='LR' else 50   # data sampling freq.
     return sstep, fs
 
-def find_tshift2sat(dti, Rsph, sats):
+def find_tshift2sat(dataL1, sats):
     '''
     Compute orbital phase lag [in sec.] between two satellites
     
     Parameters
     ---------
-    dti : Datetimeindex
-        One second separated timestamps
-    Rshp : numpy.array
-        satellites position in spherical GEO frame
+    dataL1 : [DataFrame, DataFrame]
+        unshifted L1b data (with, notably, the sensors'
+        position)
     sats : [str, str]
         satellite pair, e.g. [‘A’, ‘C’]
     
@@ -254,40 +276,69 @@ def find_tshift2sat(dti, Rsph, sats):
     ------
     tshift : [float, float]
         optimal time shift in sec. to aligned the 
-        two sensors side by side 
+        two sensors side by side. The first element 
+        indicates how much the first sensor should
+        be moved ahead; the second element is 0.
+    angsep : float
+        angle separation between the satellites' 
+        obital planes
+    tdiff : float
+        higher precission time separation 
+        between the sensors. How much the second sensor
+        position is ahead of first sensor position in sec.
         
     '''
-    ndti, nsc = len(dti), len(sats)
+    nsc = len(sats)
+    
+    dataL1_com = [[],[]]
+    COMMind = np.intersect1d(dataL1[0].index, dataL1[1].index)    
+    for sc in range(nsc):
+        dataL1_com[sc] = dataL1[sc].loc[COMMind]
+
+    dti = dataL1_com[0].index
+    
+    ndti = len(dti)
+    # Rsph, Reci = (np.full((ndti,nsc,3),np.nan) for i in range(2))
+    Rsph = np.full((ndti,nsc,3),np.nan)
+
+    for sc in range(nsc):
+        Rsph[:,sc,:] = dataL1_com[sc][['Latitude','Longitude','Radius']].values
+
     i1, i2 = 0, np.min([ndti-2, 1300])      # indices used to select an orbit 
                                             # section (smaller that 1/4 orbit)
+    
     deltat = (dti[i2] - dti[i1]).seconds    # duration of selected orbit section
+
+    rundt = (COMMind - COMMind[0])/np.timedelta64(1, 'ns')/1.e9  # running time diff.
+    
     Rspheci = np.copy(Rsph)                 # will containe sats spherical 
                                             # coordinates in inertial frame
-    Reci = np.full((ndti,nsc,3),np.nan)     # will containe sats cartesian 
+    Reci = np.full((ndti,nsc,3),np.nan)     # will contain sats cartesian 
                                             # coordinates in inertial frame
     # Spherical cordinates in the inertial frame are obtained from spherical
-    # coordinates in GEO by compensating the longitude wit Earth rotation. Then
+    # coordinates in GEO by compensating the longitude with Earth rotation. Then
     # the cartesian coordinates in the inertial frame are found. The orbits' normals
     # 'neci' are found as the cross product of satellite positions at the start 
-    # and stop of selected orbit section. The cross-product 'crossorb' of 
-    # orbits' normal provides the direction of orbitat cross-point. Vector 
+    # and stop of selected orbit section. The cross-product 'crossorb' of the two
+    # orbit normals provides the direction of orbital cross-point. Vector 
     # positions 'peci' of satellites at pseudo-equators (0 deg. latitude when 
     # considering the cross-point as pole) are computed. The evolution in time 
-    # of the (signed) position angles in the plane peci, crossorb are considered
+    # of the (signed) position angles in the plane [peci, crossorb] are considered
     # when computing the time shift
-    neci, peci = (np.full((nsc,3),np.nan) for i in range(2))   # orbit normals and 
+    neci, peci = (np.full((nsc,3),np.nan) for i in range(2))
     theta, omega, tmean = (np.full(nsc,np.nan) for i in range(3))
     cosrun, sinrun, latrun = (np.full((nsc, i2-i1),np.nan) for i in range(3))
     for sc in range(nsc):
-        Rspheci[:,sc,1] = (Rsph[:,sc,1] + np.arange(ndti)*360/(86164.098) +180)%360 -180
-        Reci[:,sc,:], MATnec2eci_sc = R_in_GEOC(np.squeeze(Rspheci[:,sc,:]))
+        Rspheci[:,sc,1] = (Rsph[:,sc,1] + rundt*360/(86164.099) +180)%360 -180
+        Reci[:,sc,:], MATsph2eci_sc = R_in_GEOC(np.squeeze(Rspheci[:,sc,:]))
         neci[sc,:] = normvec(np.cross(Reci[i1,sc,:],Reci[i2,sc,:]))[0]
         theta[sc] = np.arccos(np.sum(normvec(Reci[i1,sc,:])*normvec(Reci[i2,sc,:])))
         omega[sc] = theta[sc]/deltat
     isclow = 0 if ((sats[0] == 'A') or (sats[0] == 'C')) else 1
     avelat = np.mean(Rspheci[i1:i2,isclow,0])
     vtmp = normvec(np.cross(neci[0,:],neci[1,:]))[0]
-    crossorb = vtmp if vtmp[2]*avelat >0 else -vtmp         # cross-orbit unit vector 
+    # the cross-orbit unit vector close to the selected orbit section is
+    crossorb = vtmp if vtmp[2]*avelat > 0 else -vtmp          
     for sc in range(nsc):
         peci[sc,:] =  normvec(np.cross(crossorb, neci[sc,:]))[0]
         for ii in range(i1, i2):
@@ -295,11 +346,18 @@ def find_tshift2sat(dti, Rsph, sats):
             sinrun[sc,ii] = np.sum(normvec(Reci[ii,sc,:])*crossorb[:])
         latrun[sc,:] = np.arctan2(sinrun[sc,:], cosrun[sc,:])
         tmean[sc] = np.mean(latrun[sc,:] - np.pi/2)/omega[sc]
+    # tdiff; hHow much the second sensor position is ahead of 
+    # the first sensor position in sec. 
+    tdiff = round(tmean[1] - tmean[0],3)
+    # tshift: the first value indicates how much the first sensor should
+    # be moved ahead; the second value is 0.    
     tshift = [int(round(tmean[1] - tmean[0],0)), 0]
-    angsep = np.arccos(np.sum(peci[0,:]*peci[1,:]))*180./np.pi
+    angsep = round(np.arccos(np.sum(peci[0,:]*peci[1,:]))*180./np.pi, 4)
     print('Angle between orbital planes [deg] = ', np.round(angsep,3))
-    print('Computed time shift array [2] = ', tshift)
-    return tshift
+    print('Time shift array [2] and high precision value = ', tshift, ';', tdiff)
+
+    return tshift, angsep, tdiff
+
 
 def split_into_sections(df, begend_arr):
     '''

@@ -55,7 +55,7 @@ def save_single_sat(j_df, param):
                 file.write('#' + '; '.join(timebads.strftime('%H:%M:%S').values) + '\n')
         file.write(text_header)
     out_df.to_csv(fname_out, mode='a', sep=",", na_rep = 'NaN', date_format='%Y-%m-%dT%H:%M:%S.%f',\
-                  float_format='%15.4f', header=False)
+                  float_format='%15.8f', header=False)
     
 
 def plot_single_sat(j_df, dat_df, param):

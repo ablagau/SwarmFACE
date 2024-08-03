@@ -62,7 +62,7 @@ def j1sat(dtime_beg, dtime_end, sat, res='LR', use_filter=True, \
     data = request.get_between(start_time = dtime_beg, 
                                end_time = dtime_end,
                                asynchronous=True)   
-    print('Used MAG L1B file: ', data.sources[1])
+    print('Used Swarm MAG L1b and magnetic model files: ', data.sources)
     dat_df = data.as_dataframe()
    
     # checks for missing and bad data points
@@ -89,18 +89,26 @@ def j1sat(dtime_beg, dtime_end, sat, res='LR', use_filter=True, \
     # stores position, magnetic field and magnetic model vectors in 
     # corresponding data matrices
     Rsph = dat_df[['Latitude','Longitude','Radius']].values
+    # dtime = (ti - ti[0])/np.timedelta64(1, 'ns')/1.e9
+    # Rsphi = Rsph.copy()
+    # Rsphi[:,1] = ((Rsph[:,1] + 180 + dtime/86164.099 * 360)%360)-180       
+    
     Bnec = np.stack(dat_df['B_NEC'].values, axis=0)
     Bmod = np.stack(dat_df['B_NEC_CHAOS-all'].values, axis=0)  
     dBnec = Bnec - Bmod    # magnetic field perturbation in NEC
     # transforms vectors in Gepgraphyc cartesian
+    # R, MATnec2geoi = R_in_GEOC(Rsphi)   
+    # B = np.matmul(MATnec2geoi,Bnec[...,None]).reshape(Bnec.shape)
+    # dB = np.matmul(MATnec2geoi,dBnec[...,None]).reshape(dBnec.shape)       
     R, MATnec2geo = R_in_GEOC(Rsph)   
-    B = np.matmul(MATnec2geo,Bnec[...,None]).reshape(Bnec.shape)
+    # B = np.matmul(MATnec2geo,Bnec[...,None]).reshape(Bnec.shape)
+    refB = np.matmul(MATnec2geo,Bmod[...,None]).reshape(Bnec.shape)
     dB = np.matmul(MATnec2geo,dBnec[...,None]).reshape(dBnec.shape)   
     
     if tincl is not None:
         if isinstance(tincl[0], str): tincl = pd.to_datetime(tincl)   
     # compute the current and stores data in DataFrames
-    j_df = singleJfac(ti, R, B, dB, alpha=alpha, N2d=N2d, N3d=N3d, tincl=tincl, \
+    j_df = singleJfac(ti, R, refB, dB, alpha=alpha, N2d=N2d, N3d=N3d, tincl=tincl, \
                    res=res, er_db=er_db, angTHR = angTHR, use_filter = use_filter)    
 
     dBgeo_df= pd.DataFrame(dB, columns=['dB_xgeo','dB_ygeo','dB_zgeo'],index=ti)

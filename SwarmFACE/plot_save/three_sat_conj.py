@@ -62,8 +62,6 @@ def plot_three_sat_conj(conj_df, fac_df, qpar_df, param):
     marg = pd.to_timedelta(300, unit='s')
 
     timesB = conj_df['TimeB']
-    coldBgeo = pd.MultiIndex.from_product([['dBgeo'],sats,['X','Y','Z']], 
-                               names=['Var','Sat','Com'])
 
     for kk in range(len(conj_df)):     
         df_int = [fac_df[sc][timesB[kk] - marg: timesB[kk] + marg] for sc in range(nsc)]
@@ -103,8 +101,8 @@ def plot_three_sat_conj(conj_df, fac_df, qpar_df, param):
             ax[ii].set_xlim(timesB[kk] - marg, timesB[kk] + marg)
             ax[ii].set_xticklabels([])  
         
-        for ii in range(7,9): 
-            ax[ii].sharex(ax[6])
+        for ii in range(6,8): 
+            ax[ii].sharex(ax[8])
 
         #gets the QDLat trend, sign, maximum value, and value at central FAC  
         qd_trends, qd_signs, qd_maxs, qd_aocs = (np.zeros(nsc) for i in range(4))
@@ -187,9 +185,6 @@ def plot_three_sat_conj(conj_df, fac_df, qpar_df, param):
             for ic in range(3):
                 db_arr[:,ic] = np.interp(ti_arr, dBgeo[('dBgeo',sats[sc])].index.values.astype(float), \
                            dBgeo[('dBgeo',sats[sc],cmp[ic])].values)
-            aoc_time = qpar_df[sc].loc[qpar_df[sc]['orbit'] == 
-                             conj_df['orbit'+sats[sc]][kk], 'aoc_time'].iloc[0]
-            ind_qd = (np.abs(ti_arr - aoc_time.asm8.astype("float"))).argmin()            
             
             # plots the last three panels with dBgeo as function of QDLat.
             ax[sc + 6].plot(qd_arr, db_arr)
@@ -199,9 +194,17 @@ def plot_three_sat_conj(conj_df, fac_df, qpar_df, param):
             ax[sc + 6].xaxis.set_major_locator(plt.MaxNLocator(10))
             ax[sc + 6].set_xlim(qd_range)
             if sc in range(2):
-                ax[sc + 6].set_xticklabels([])
-                ax[sc + 6].sharey(ax[6])
-            plt.figtext(0.01, ylo[8]-0.008, 'QDLat', va='top')
+                ax[sc + 6].get_xaxis().set_visible(False)
+            if sc == 0:
+                lim_ar=list(ax[sc + 6].get_ylim())
+            else:
+                lim_ar[0] = min([lim_ar[0], list(ax[sc + 6].get_ylim())[0]])
+                lim_ar[1] = max([lim_ar[1], list(ax[sc + 6].get_ylim())[1]])
+                
+        for sc in range(3):
+            ax[sc + 6].set_ylim(lim_ar[0], lim_ar[1])   
+            
+        plt.figtext(0.01, ylo[8]-0.008, 'QDLat', va='top')
 
         plt.draw()
         fig.savefig(fname_fig)

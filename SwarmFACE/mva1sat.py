@@ -156,10 +156,13 @@ def perform_mva1sat(j_df, input_df, param, span_sel, savedata=True,
     ti = input_df.index
     Rsph = input_df[['Latitude','Longitude','Radius']].values
     Bnec = np.stack(input_df['B_NEC'].values, axis=0)
+    Bmod = np.stack(input_df['B_NEC_CHAOS-all'].values, axis=0)
     dB = input_df[['dB_xgeo', 'dB_ygeo', 'dB_zgeo']].values
     # transforms vectors in Gepgraphyc cartesian
     R, MATnec2geo = R_in_GEOC(Rsph)   
-    B = np.matmul(MATnec2geo,Bnec[...,None]).reshape(Bnec.shape)    
+    B = np.matmul(MATnec2geo,Bnec[...,None]).reshape(Bnec.shape)  
+    refB = np.matmul(MATnec2geo,Bmod[...,None]).reshape(Bmod.shape)
+    # breakpoint()
     Rmid = j_df[['Rmid_x', 'Rmid_y', 'Rmid_z']].values
     V3d = R[1:,:] - R[:-1,:]    
     eV3d, eRmid = normvec(V3d), normvec(Rmid)
@@ -197,8 +200,7 @@ def perform_mva1sat(j_df, input_df, param, span_sel, savedata=True,
     ang[indok[-1]:] = ang[indok[-2]]
     ang_ave = np.round(np.mean(ang[indok[:-1]]), 1)
     # DataFrames with FAC inclination and density corrected for inclination
-    ang_df = pd.DataFrame(ang, columns=['ang_v_n'], index=j_df.index)
-    jcorr_df = singleJfac(ti, R, B, dB, alpha=ang, use_filter = True)
+    jcorr_df = singleJfac(ti, R, refB, dB, alpha=ang, use_filter = True)
     
     col_mva = ['sat', 'TbegMVA', 'TendMVA', 'lmin', 'mindir', 'lmax', 'maxdir', 
                'B_unit', 'angVN']

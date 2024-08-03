@@ -89,8 +89,8 @@ def plot_qi(qorbs_Bnec, qorbs_dB, qorbs_fac, qorbs_dBmva, qimva_df, Bcc_df, qicc
         tsec = qorbs_dBmva[isec][jj].index
         dBsec = qorbs_dBmva[isec][jj]['dB_max'].values
         
-        tref = qorbs_dBmva[iref][jj].index
-        dBref = qorbs_dBmva[iref][jj]['dB_max'].values
+        # tref = qorbs_dBmva[iref][jj].index
+        # dBref = qorbs_dBmva[iref][jj]['dB_max'].values
 
         str_trange = tq_beg.isoformat().replace('-','')[:8]+'_'+ \
              tq_beg.isoformat().replace(':','')[11:17] + \
@@ -179,7 +179,6 @@ def plot_qi(qorbs_Bnec, qorbs_dB, qorbs_fac, qorbs_dBmva, qimva_df, Bcc_df, qicc
         ax[3].sharex(ax[2])
         
         ax[4].plot(tsec, dBsec)
-#        qorbs_ref_cc[jj].plot(ax=ax[4])
         ax[4].plot(Bcc_df[jj])
         ax[4].legend(['dB_max_sw'+sats[isec], 'dB_max_sw'+sats[iref]], \
                                  loc = (0.9, 0.1), handlelength=1)

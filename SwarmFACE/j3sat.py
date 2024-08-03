@@ -54,7 +54,7 @@ def j3sat(dtime_beg, dtime_end, tshift=[0,0,0], use_filter=True,
     tsh3s = np.around(np.mean(ts), decimals=3)
     ndt = ndti - max(ts)
     dt = dti[:ndt].shift(1000.*tsh3s,freq='ms')  # new data timeline
-    Rsph, QDref, Bsw, Bmod, dBnec, R, B, dB = (np.full((ndt,nsc,3),np.nan) for i in range(8))    
+    Rsph, QDref, Bsw, Bmod, dBnec, R, refB, dB = (np.full((ndt,nsc,3),np.nan) for i in range(8))    
     
     request = SwarmRequest()
     for sc in range(nsc):
@@ -64,7 +64,7 @@ def j3sat(dtime_beg, dtime_end, tshift=[0,0,0], use_filter=True,
                              sampling_step="PT1S")
         data = request.get_between(start_time = dtime_beg, end_time = dtime_end,
                                    asynchronous=True)   
-        print('Used MAG L1B file: ', data.sources[1])
+        print('Used Swarm MAG L1b and magnetic model files: ', data.sources)
         dat_df = data.as_dataframe()
         # checks for missing and bad data points
         # sets bad B_NEC data (zero magnitude in L1b LR files) to NaN. 
@@ -88,10 +88,11 @@ def j3sat(dtime_beg, dtime_end, tshift=[0,0,0], use_filter=True,
         Bmod[:,sc,:] = np.stack(dat_df['B_NEC_CHAOS-all'].iloc[ts[sc]:ts[sc]+ndt].values, axis=0)  
         # Computes magnetic field perturbation in NEC
         dBnec[:,sc,:] = Bsw[:,sc,:] - Bmod[:,sc,:]    
-        # Computes sats positions (R), magnetic measurements (B), and magnetic  
-        # perturbations (dB) in the global geographic (Cartesian) frame. 
+        # Computes sats positions (R), magnetic field reference (refB), and magnetic  
+        # perturbations (dB) in the global geographic (Cartesian) frame.
+        # refB is used only to compute the magnetic field direction.
         R[:,sc,:], MATnec2geo_sc = R_in_GEOC(np.squeeze(Rsph[:,sc,:]))  
-        B[:,sc,:] = np.matmul(MATnec2geo_sc,np.squeeze(Bsw[:,sc,:])[...,None]).reshape(-1,3)
+        refB[:,sc,:] = np.matmul(MATnec2geo_sc,np.squeeze(Bmod[:,sc,:])[...,None]).reshape(-1,3)
         dB[:,sc,:] = np.matmul(MATnec2geo_sc,np.squeeze(dBnec[:,sc,:])[...,None]).reshape(-1,3)
 
 #     collect all input data in a single DataFrame
@@ -118,7 +119,7 @@ def j3sat(dtime_beg, dtime_end, tshift=[0,0,0], use_filter=True,
 
     input_df = pd.concat([dfRsph, dfQDref, dfBswBmod, dfdBgeo, dfRgeo], axis=1)
 
-    j_df = threeJfac(dt, R, B, dB, er_db=er_db, angTHR=angTHR, use_filter=use_filter)
+    j_df = threeJfac(dt, R, refB, dB, er_db=er_db, angTHR=angTHR, use_filter=use_filter)
 
     param = {'dtime_beg':dtime_beg,'dtime_end':dtime_end,'sats': sats, \
              'tshift':ts, 'angTHR': angTHR, 'Bmodel':Bmodel, \

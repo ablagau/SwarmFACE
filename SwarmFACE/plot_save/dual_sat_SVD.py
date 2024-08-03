@@ -154,7 +154,7 @@ def plot_dual_sat_SVD(j_df, dat_df, param):
     ax[1].legend(['dB_x', 'dB_y', 'dB_z' ], loc=(0.95, 0.1), handlelength=1)   
 
     ax[2].plot(np.log10(1/j_df['tau']**2))
-    ax[2].set_ylabel('logCN2\n')
+    ax[2].set_ylabel('log(CN2)\n')
     
     ax[3].plot(j_df['angBN'])
     ax[3].set_ylabel('angBN\n[deg]', linespacing=1.7)
@@ -174,7 +174,7 @@ def plot_dual_sat_SVD(j_df, dat_df, param):
     ax[5].plot(FAC_L2['FAC'], label='$\mathrm{J_{Level2}}$')
     ax[5].axhline(y=0, linestyle='--', color='k', linewidth=0.7)
     ax[5].set_ylabel('$J_{FAC}$\n[$\mu A/m^2$]', linespacing=1.7)
-    ax[5].legend(loc = (0.95, 0.1), handlelength=1)
+    ax[5].legend(loc = (0.93, 0.1), handlelength=1)
 
     if use_filter:
         ax[6].plot(j_df['FAC_flt_er'])

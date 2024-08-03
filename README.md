@@ -1,3 +1,8 @@
+
+# SwarmFACE
+[![DOI](https://zenodo.org/badge/548999549.svg)](https://zenodo.org/badge/latestdoi/548999549)
+[![docs](https://readthedocs.org/projects/swarmface/badge/?version=latest)](http://swarmface.readthedocs.io/)
+
 **Overview**
 
 The _**SwarmFACE**_ package serves the exploration of field-aligned currents 
@@ -7,10 +12,10 @@ single- and multi-satellite methods are implemented to extend
 the characterization of FAC systems beyond the Swarm official Level-2 FAC 
 product. The package further provides an useful utility to find intervals 
 when Swarm forms a close configuration above the auroral oval (AO). In 
-addition, for each AO crossing, a series of FAC quality indicators related to the FAC methods’ 
-underlying assumptions (i.e. FAC sheet planarity and orientation, correlation 
-of magnetic field perturbations recorded by the lower Swarm satellites), can 
-be estimated.
+addition, for each AO crossing, a series of FAC quality indicators related to
+the FAC methods’ underlying assumptions (i.e. FAC sheet planarity and 
+orientation, correlation of magnetic field perturbations recorded by the 
+lower Swarm satellites), can be estimated.
 
 **Installation**
 
@@ -21,9 +26,9 @@ go to the newly made SwarmFACE directory
     cd SwarmFACE
 
 After you activate the python environment you 
-can use pip3:
+can use pip:
 
-`pip3 install ./`
+`pip install ./`
 
 **Dependencies**
 
@@ -52,24 +57,35 @@ single-satellite method, write:
     j_df, dat_df, param = j1sat(dtime_beg, dtime_end, sat)
 
 For each high-level function, there is an associated 
-jupyter notebook that illustrates its application _notebooks_ 
-directory.
+jupyter notebook in the _notebooks_ directory that illustrates 
+its application. 
+
+The application and performance of the FAC estimation methods
+were extensively discussed in 
+
+Blagau, A., and Vogt, J. (2019). Multipoint field-aligned current
+estimates with Swarm. J. Geophys. Res. (Space Phys. 124, 6869–6895.
+doi:10.1029/2018JA026439
+
+Vogt, J., Blagau, A., and Pick, L. (2020). Robust adaptive spacecraft
+array derivative analysis. Earth Space Sci. 7, e00953. 
+doi:10.1029/2019EA000953
 
 
-**Acknowledging or citing SwarmFACE**
+**Acknowledging and citing SwarmFACE**
 
 If you use SwarmFACE for scientific work or research presented 
 in a publication, please cite the SwarmFACE paper:
 
-Blagau, A., J. Vogt, (2022), SwarmFACE: a Python Package for 
-Field-Aligned Currents Exploration with Swarm, Front. Astron. 
-Space Sci., under review.
+Blagau, A., and Vogt, J., (2023), SwarmFACE: A Python package for 
+field-aligned currents exploration with Swarm. Front. Astron. 
+Space Sci. 9:1077845. doi: 10.3389/fspas.2022.1077845
 
 Additionally, consider to add in the methods or acknowledgements 
 section the following: "This research has made use of SwarmFACE v?.?.?, 
 an open-source and free Python package that serves the 
 exploration of field-aligned currents system based on 
-Swarm observation (Zenodo: https://doi.org/...)." 
+Swarm observation (Zenodo: https://doi.org/10.5281/zenodo.7361438)." 
 
 
 **Copyright**

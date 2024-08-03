@@ -160,7 +160,7 @@ def plot_dual_sat_LS(j_df, dat_df, param):
     ax[4].plot(FAC_L2['FAC'], label='$\mathrm{J_{Level2}}$')
     ax[4].axhline(y=0, linestyle='--', color='k', linewidth=0.7)
     ax[4].set_ylabel('$J_{FAC}$\n[$\mu A/m^2$]', linespacing=1.7)
-    ax[4].legend(loc = (0.95, 0.1), handlelength=1)
+    ax[4].legend(loc = (0.94, 0.1), handlelength=1)
 
     if use_filter:
         ax[5].plot(j_df['FAC_flt_er'])

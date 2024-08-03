@@ -25,7 +25,7 @@ copyright = '2022, Adrian Blagau, Joachim Vogt'
 author = 'Adrian Blagau, Joachim Vogt'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.2.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -61,6 +61,7 @@ html_theme = 'sphinx_rtd_theme'
 
 html_theme_options = {
     'titles_only': True,
+    'navigation_depth': 4,
     'style_nav_header_background': 'white'
     }
 

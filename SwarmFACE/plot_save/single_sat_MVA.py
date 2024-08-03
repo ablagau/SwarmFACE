@@ -134,7 +134,7 @@ def plot_mva1sat(j_df, dat_df, jcorr_df, dBmva_df, mva_df, param):
             
     #Plots time-series quantities    
     ax[0].plot(dBnec_df)
-    ax[0].set_ylabel('$dB_{GEO}$ sw'+sat[0]+'\n[nT]', linespacing=1.7)
+    ax[0].set_ylabel('$dB_{NEC}$ sw'+sat[0]+'\n[nT]', linespacing=1.7)
     ax[0].axvline(tmva_int[0], ls='--', c='k')
     ax[0].axvline(tmva_int[1], ls='--', c='k')
     ax[0].legend(['dB_N', 'dB_E', 'dB_C' ], loc = (0.95, 0.1), handlelength=1)
@@ -167,7 +167,7 @@ def plot_mva1sat(j_df, dat_df, jcorr_df, dBmva_df, mva_df, param):
     for ii in range(1,nrp -1):
         ax[ii].sharex(ax[0])
         
-    ax[4] =  fig.add_axes([xle, 0.03, xri-xle, 0.30])
+    ax[4] =  fig.add_axes([xle, 0.02, xri-xle, 0.29])
     ax[4].set_title('Hodogram of '+r'$dB_{minvar}$'+ ' vs. '+\
         r'$dB_{maxvar}$' , fontsize = 'xx-large', pad = 15)
     ax[4].plot(dBmva_df2.values[:,2], dBmva_df2.values[:,1], label='plot_range')
@@ -177,7 +177,7 @@ def plot_mva1sat(j_df, dat_df, jcorr_df, dBmva_df, mva_df, param):
     ax[4].plot(dBmva_df3.values[-1,2], dBmva_df3.values[-1,1], \
       label='stop', color='red', marker='o', linewidth=2, markersize=8)
     ax[4].set_aspect('equal', adjustable='box')
-    ax[4].set_xlabel(r'$dB_{maxvar}$'+'\n'+r'$[nT]$', linespacing=1.7)
+    ax[4].set_xlabel(r'$dB_{maxvar}$ '+r'$[nT]$', linespacing=1.7)
     ax[4].set_ylabel(r'$dB_{minvar}$'+'\n'+r'$[nT]$', linespacing=1.7)
     ax[4].legend(loc = (0.9, 0.9), handlelength=1) 
 

@@ -7,6 +7,6 @@ go to the newly made SwarmFACE directory
 
     cd SwarmFACE
 
-After you activate the python environment use pip3:
+After you activate the python environment use pip:
 
-    pip3 install ./
+    pip install ./

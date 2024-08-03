@@ -38,7 +38,7 @@ def j2satLS(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
     errTHR : float
         accepted error for the current density along the normal direction
     saveconf : boolean
-        'True' for adding the quad's parameters in the results      
+        'True' for adding the quad's parameters in the results
     savedata : boolean
         'True' for saving the results in an ASCII file
     saveplot : boolean
@@ -60,8 +60,9 @@ def j2satLS(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
     nsc = len(sats)
     timebads={'sc0':None,'sc1':None}
     
-    Rsph, QDref, Bsw, Bmod, dBnec, R, B, dB = (np.full((ndti,nsc,3),np.nan) for i in range(8))
+    Rsph, Rsphi, QDref, Bsw, Bmod, dBnec, R, refB, dB = (np.full((ndti,nsc,3),np.nan) for i in range(9))
     
+    data_int = [[], []]
     request = SwarmRequest()
     for sc in range(nsc):
         request.set_collection("SW_OPER_MAG"+sats[sc]+"_LR_1B")
@@ -70,7 +71,7 @@ def j2satLS(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
                              sampling_step="PT1S")
         data = request.get_between(start_time = dtime_beg, end_time = dtime_end,
                                    asynchronous=True)   
-        print('Used MAG L1B file: ', data.sources[1])
+        print('Used Swarm MAG L1b and magnetic model files: ', data.sources)
         dat_df = data.as_dataframe()
         # checks for missing and bad data points
         # sets bad B_NEC data (zero magnitude in L1b LR files) to NaN. 
@@ -89,19 +90,27 @@ def j2satLS(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
         # Stores position, magnetic field and magnetic model vectors in arrays
         # Takes care of the optional time-shifts introduced between the sensors
         Rsph[:,sc,:] = dat_df[['Latitude','Longitude','Radius']].values
+        # correct the latitude due to Earth rotation
+        dtime = (dti - dti[0])/np.timedelta64(1, 'ns')/1.e9
+        Rsphi[:,sc,:] = Rsph[:,sc,:]
+        Rsphi[:,sc,1] = ((Rsph[:,sc,1] + 180 + dtime/86164.099 * 360)%360)-180
         QDref[:,sc,:] = dat_df[['QDLat','QDLon','MLT']].values
         Bsw[:,sc,:] = np.stack(dat_df['B_NEC'].values, axis=0)
         Bmod[:,sc,:] = np.stack(dat_df['B_NEC_CHAOS-all'].values, axis=0)  
         # Computes magnetic field perturbation in NEC
         dBnec[:,sc,:] = Bsw[:,sc,:] - Bmod[:,sc,:]    
-        # Computes sats positions (R), magnetic measurements (B), and magnetic  
+        # Computes sats positions (R), magnetic field reference (refB), and magnetic  
         # perturbations (dB) in the global geographic (Cartesian) frame. 
-        R[:,sc,:], MATnec2geo_sc = R_in_GEOC(np.squeeze(Rsph[:,sc,:]))  
-        B[:,sc,:] = np.matmul(MATnec2geo_sc,np.squeeze(Bsw[:,sc,:])[...,None]).reshape(-1,3)
-        dB[:,sc,:] = np.matmul(MATnec2geo_sc,np.squeeze(dBnec[:,sc,:])[...,None]).reshape(-1,3)
-    
+        # refB is used only to compute the magnetic field direction.
+        R[:,sc,:], MATnec2geoi_sc = R_in_GEOC(np.squeeze(Rsphi[:,sc,:]))
+        refB[:,sc,:] = np.matmul(MATnec2geoi_sc, np.squeeze(Bmod[:,sc,:])[...,None]).reshape(-1,3)
+        dB[:,sc,:] = np.matmul(MATnec2geoi_sc, np.squeeze(dBnec[:,sc,:])[...,None]).reshape(-1,3)
+       
+        data_int[sc] = dat_df
+        
     if tshift is None:
-        tshift = find_tshift2sat(dti, Rsph, sats)
+        tshift, angsep, tdiff = find_tshift2sat(data_int, sats)
+    print('tshift = ', tshift)
         
     ts = np.around(np.array(tshift) - min(tshift))
     ndt = ndti - max(ts)
@@ -109,12 +118,12 @@ def j2satLS(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
     dt = dti[:ndt].shift(1000.*tsh2s,freq='ms')  # new data timeline
 
     # shifts data and keeps only relevant points    
-    list_ar = [Rsph, QDref, Bsw, Bmod, dBnec, R, B, dB]
+    list_ar = [Rsph, Rsphi, QDref, Bsw, Bmod, dBnec, R, refB, dB]
     for ii in np.arange(len(list_ar)):
         for sc in range(nsc):
             list_ar[ii][0:ndt,sc,:] = list_ar[ii][ts[sc]:ndt + ts[sc] ,sc,:]
         list_ar[ii] = np.delete(list_ar[ii], np.s_[ndt:],0)
-    Rsph, QDref, Bsw, Bmod, dBnec, R, B, dB = [list_ar[ii] for ii in np.arange(8)]
+    Rsph, Rsphi, QDref, Bsw, Bmod, dBnec, R, refB, dB = [list_ar[ii] for ii in np.arange(9)]
 
     #  collects all input data in a single DataFrame
     colRsph = pd.MultiIndex.from_product([['Rsph'],sats,['Lat','Lon','Radius']], 
@@ -140,7 +149,7 @@ def j2satLS(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
 
     input_df = pd.concat([dfRsph, dfQDref, dfBswBmod, dfdBgeo, dfRgeo], axis=1)  
     
-    j_df = ls_dualJfac(dt, R, B, dB, dt_along=dt_along, er_db=er_db, angTHR=angTHR, 
+    j_df = ls_dualJfac(dt, R, refB, dB, dt_along=dt_along, er_db=er_db, angTHR=angTHR, 
                        errTHR=errTHR, use_filter=use_filter, saveconf=saveconf)
 
     param = {'dtime_beg':dtime_beg,'dtime_end':dtime_end,'sats': sats, \
