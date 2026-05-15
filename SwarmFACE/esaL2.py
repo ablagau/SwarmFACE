@@ -30,8 +30,12 @@ def single(dtime_beg, dtime_end, sat):
     data = request.get_between(start_time = dtime_beg, 
                                end_time = dtime_end,
                                asynchronous=False)  
-    print('Used FAC file: ', data.sources[0])
+    if len(data.sources) == 0:
+        print('Used FAC file: ', 'None')
+    else:
+        print('Used FAC file: ', data.sources[0])
     FAC_L2 = data.as_dataframe()
+    
     return FAC_L2
 
 def dual(dtime_beg, dtime_end):
@@ -58,6 +62,10 @@ def dual(dtime_beg, dtime_end):
     data = request.get_between(start_time = dtime_beg, 
                                end_time = dtime_end,
                                asynchronous=False)  
-    print('Used FAC file: ', data.sources[0])
+    if len(data.sources) == 0:
+        print('Used FAC file: ', 'None')
+    else:
+        print('Used FAC file: ', data.sources[0])
     FAC_L2 = data.as_dataframe()
+
     return FAC_L2

@@ -176,7 +176,7 @@ def fac_qi(dtime_beg, dtime_end, swB=False, jTHR=0.05, saveplot=False):
     # prepare a compact output    
     input_df = qorbs_Bnec
     # below one uses swA because is a lower sat. i.e. with smaller orbital period
-    RBdBAng_df = [[[] for i in range(nrq[0])] for j in range(nsc)] 
+    RBdBAng_df = [[[] for i in range(nrq[j])] for j in range(nsc)] 
     for sc in range(nsc):
         for jj in range(nrq[sc]):
             tmp_df = qorbs_dB[sc][jj].copy()

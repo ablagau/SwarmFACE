@@ -8,7 +8,7 @@ from .utils import *
 from SwarmFACE.plot_save.dual_sat_SVD import *
 
 def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
-             use_filter=True, er_db=0.5, tauast= 0.13, taunul= 0.07, intpol='Linear',
+             use_filter=True, er_db=0.5, tauast= 0.17, taunul= 0.11, intpol='Cubic',
              angTHR=30., saveconf=False, savedata=True, saveplot=True):
     '''
     High-level routine to estimate the FAC density with dual-satellite Singular 
@@ -83,8 +83,11 @@ def j2satSVD(dtime_beg, dtime_end, sats, tshift=None, dt_along = 5,
         if len(dat_df) != ndti:
             print('MISSING DATA FOR Sw'+sats[sc])
             sys.exit()
-        ind_badsi = np.where(np.linalg.norm(np.stack(dat_df['B_NEC'].values), \
-                                           axis = 1)==0)[0]
+        # ind_badsi = np.where(np.linalg.norm(np.stack(dat_df['B_NEC'].values), \
+        #                                    axis = 1)==0)[0]
+        bsc_compi = pd.DataFrame(dat_df["B_NEC"].to_list(), columns=['x','y','z'], \
+                                index=dat_df.index)
+        ind_badsi = np.where(bsc_compi.isna().any(axis=1))[0]
         if len(ind_badsi):
             dat_df, tbadsi = GapsAsNaN(dat_df, ind_badsi)
             print('NR. OF BAD DATA POINTS FOR Sw'+sats[sc]+': ', len(ind_badsi))

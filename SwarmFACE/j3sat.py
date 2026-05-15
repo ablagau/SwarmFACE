@@ -71,8 +71,11 @@ def j3sat(dtime_beg, dtime_end, tshift=[0,0,0], use_filter=True,
         if len(dat_df) != ndti:
             print('MISSING DATA FOR Sw'+sats[sc])
             sys.exit()
-        ind_badsi = np.where(np.linalg.norm(np.stack(dat_df['B_NEC'].values), \
-                                           axis = 1)==0)[0]
+        # ind_badsi = np.where(np.linalg.norm(np.stack(dat_df['B_NEC'].values), \
+        #                       axis = 1)==0)[0]
+        bsc_compi = pd.DataFrame(dat_df["B_NEC"].to_list(), columns=['x','y','z'], \
+                                index=dat_df.index)
+        ind_badsi = np.where(bsc_compi.isna().any(axis=1))[0]
         if len(ind_badsi):
             dat_df, tbadsi = GapsAsNaN(dat_df, ind_badsi)
             print('NR. OF BAD DATA POINTS FOR Sw'+sats[sc]+': ', len(ind_badsi))

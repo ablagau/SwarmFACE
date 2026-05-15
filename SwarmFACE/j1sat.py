@@ -73,8 +73,8 @@ def j1sat(dtime_beg, dtime_end, sat, res='LR', use_filter=True, \
     miss_data = 1 if len(dat_df) != ndt else 0
     if miss_data:
          print('MISSING DATA FOR Sw'+sat[0])    
-    ind_bads = np.where(\
-        np.linalg.norm(np.stack(dat_df['B_NEC'].values), axis = 1)==0)[0]
+    bsc_comp = pd.DataFrame(dat_df["B_NEC"].to_list(), columns=['x','y','z'], index=dat_df.index)
+    ind_bads = np.where(bsc_comp.isna().any(axis=1))[0]   
     if len(ind_bads):
         print('NR. OF BAD DATA POINTS: ', len(ind_bads))
         timebads = dat_df.index[ind_bads]      
@@ -122,5 +122,5 @@ def j1sat(dtime_beg, dtime_end, sat, res='LR', use_filter=True, \
         save_single_sat(j_df, param)
     if saveplot:
         plot_single_sat(j_df, input_df, param)
-       
+    
     return j_df, input_df, param 

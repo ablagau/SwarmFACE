@@ -76,7 +76,8 @@ def plot_qi(qorbs_Bnec, qorbs_dB, qorbs_fac, qorbs_dBmva, qimva_df, Bcc_df, qicc
     str_trange = dtime_beg.replace('-','')[:8]+'_'+ dtime_beg.replace(':','')[11:15] \
         + '_'+ dtime_end.replace('-','')[:8] + '_'+ dtime_end.replace(':','')[11:15]
 
-    iok = np.where(pd.notna(qicc_df['Trefbeg']))[0]
+    # iok = np.where(pd.notna(qicc_df['Trefbeg']))[0]
+    iok = np.where(qicc_df['refsc']!='None')[0]
     for kk in range(len(iok)):
         jj = iok[kk]
         indA, indC = sats.index('A'), sats.index('C')
@@ -213,16 +214,27 @@ def plot_qi(qorbs_Bnec, qorbs_dB, qorbs_fac, qorbs_dBmva, qimva_df, Bcc_df, qicc
         lonc = qorbs_Bnec[indC][jj]['Longitude'].values
         
         locx = ax[nrp-1].get_xticks()
-        latc_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        # latc_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        #                             latc), decimals=2).astype('str')
+        # lonc_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        #                             lonc), decimals=2).astype('str')
+        # qdlat_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        #                             qorbs_Bnec[indC][jj]['QDLat']), decimals=2).astype('str')
+        # qdlon_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        #                             qorbs_Bnec[indC][jj]['QDLon']), decimals=2).astype('str')
+        # mlt_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        #                             qorbs_Bnec[indC][jj]['MLT']), decimals=1).astype('str')       
+
+        latc_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_Bnec[indC][jj].index), \
                                     latc), decimals=2).astype('str')
-        lonc_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        lonc_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_Bnec[indC][jj].index), \
                                     lonc), decimals=2).astype('str')
-        qdlat_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        qdlat_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_Bnec[indC][jj].index), \
                                     qorbs_Bnec[indC][jj]['QDLat']), decimals=2).astype('str')
-        qdlon_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
+        qdlon_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_Bnec[indC][jj].index), \
                                     qorbs_Bnec[indC][jj]['QDLon']), decimals=2).astype('str')
-        mlt_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_dBmva[indC][jj].index), \
-                                    qorbs_Bnec[indC][jj]['MLT']), decimals=1).astype('str')       
+        mlt_ipl = np.round(np.interp(locx, mdt.date2num(qorbs_Bnec[indC][jj].index), \
+                                    qorbs_Bnec[indC][jj]['MLT']), decimals=1).astype('str')   
 
         lab_fin = ['']*len(locx)
         for ii in range(len(locx)):

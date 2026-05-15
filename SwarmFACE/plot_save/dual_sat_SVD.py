@@ -269,7 +269,7 @@ def plot_dual_sat_SVD(j_df, dat_df, param):
         for kk in [0, 1, 3, 2, 0]:
             xquad.append(Ri_nec[ii, kk, 0])
             yquad.append(Ri_nec[ii, kk, 1])       
-        ax_conf[ii].plot(xquad, yquad, c='k', linestyle=':', linewidth=1)        
+        ax_conf[ii].plot(xquad, yquad, c='k', linestyle=':', linewidth=1)
         ax_conf[ii].arrow(0, 0, d_span/10*Vi_nec[ii, kk, 0], d_span/10*Vi_nec[ii, kk, 1], \
                    color='k', head_width = 4)
         for jj in range(4):

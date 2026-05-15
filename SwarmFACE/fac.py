@@ -375,7 +375,7 @@ def ls_dualJfac(dt, R, refB, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
      
     # Estimates the errors in Jn
     Jn_er = 1e-6*er_db/muo*np.sqrt(traceq)
-    Jb_er = Jn_er/np.absolute(cosBN)    
+    Jb_er = Jn_er/np.absolute(cosBN)
     bad_err = np.where(Jn_er > errTHR)    
     Jb[bad_ang], Jb_er[bad_ang] = (np.nan for i in range(2))   
     Jb[bad_err], Jn[bad_err]  = (np.nan for i in range(2))
@@ -421,7 +421,7 @@ def ls_dualJfac(dt, R, refB, dB, dt_along= 5, er_db= 0.5, angTHR= 30.,
     if saveconf == True:
         # orders the quad's vertices and computes its parameters 
         EL, EM, el, em  = SortVertices(R4s, dB4s)[7:]        
-        j_df = j_df.assign(EL=EL, EM=EM, el=el, em=em)    
+        j_df = j_df.assign(EL=EL, EM=EM, el=el, em=em)
     
     return j_df
     
@@ -512,8 +512,8 @@ def qmatrix_intpol(R,tauast=0.13, taunul=0.07, intpol='Linear'):
     return Q,AD,Vt,S     
 
 
-def svd_dualJfac(dt, R, refB, dB, dt_along=5, er_db=0.5, tauast=0.13, taunul=0.07,
-                 intpol='Linear', angTHR=30., use_filter=True, saveconf=False):
+def svd_dualJfac(dt, R, refB, dB, dt_along=5, er_db=0.5, tauast=0.17, taunul=0.11,
+                 intpol='Cubic', angTHR=30., use_filter=True, saveconf=False):
     '''
     Estimate the FAC density with dual-satellite Singular
     Values Decomposition method
